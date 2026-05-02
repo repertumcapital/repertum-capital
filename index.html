@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fund Overview | Repertum Capital Management</title>
+  <meta name="description" content="Repertum Capital Management – Studentisch gemanagtes Paper-Equity-Portfolio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <nav class="nav" role="navigation" aria-label="Hauptnavigation">
+    <div class="container">
+      <div class="nav__inner">
+        <a href="index.html" class="nav__logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+           <rect width="32" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+            <path d="M8 22V10h8a4 4 0 0 1 0 8h-4l5 4" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M8 10h8" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <circle cx="22" cy="20" r="3" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" fill="none"/>
+          </svg>
+          <span class="nav__logo-text">Repertum Capital<span class="nav__logo-sub">Management</span></span>
+        </a>
+
+        <ul class="nav__links" role="list">
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="trades.html">Trades & Performance</a></li>
+          <li><a href="research.html">Research</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+
+        <div class="nav__actions">
+          <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"></button>
+          <button class="nav__hamburger" aria-label="Menü öffnen" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav__mobile" aria-label="Mobile Navigation">
+      <a href="index.html">Overview</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="trades.html">Trades & Performance</a>
+      <a href="research.html">Research</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </nav>
+
+  <section class="section--hero">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-grid">
+        <div>
+          <p class="hero-eyebrow">Student-Managed Equity Fund</p>
+
+          <span class="hero__paper-badge">
+            Paper Portfolio · Kein echtes Kundenkapital
+          </span>
+
+          <h1 class="hero__title animate-fade-up">
+            Repertum Capital<br>Management
+          </h1>
+
+          <p class="hero__tagline animate-fade-up animate-delay-1">
+            1.000.000 Paper Capital · Fundamental Long-Only · MSCI World Benchmark
+          </p>
+
+        <div class="overview-card" style="margin-top: var(--space-8);">
+          <p class="overview-card__header">Fund Snapshot · Stand: <span id="snapshotDate">Live aus Paper-Portfolio</span></p>
+          <div class="overview-stat"><span class="overview-stat__label">Portfolio-Wert</span><span class="overview-stat__value" id="snapshotPortfolioValue">€ 0</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Performance seit Start</span><span class="overview-stat__value" id="snapshotReturn">0 %</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Benchmark MSCI World</span><span class="overview-stat__value" id="snapshotBenchmark">0 %</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Alpha vs. Benchmark</span><span class="overview-stat__value" id="snapshotAlpha">0 %</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Startdatum</span><span class="overview-stat__value" id="snapshotStartDate">—</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Offene Positionen</span><span class="overview-stat__value" id="snapshotPositions">0</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">Performance-Metriken</span>
+        <h2 class="section-title">Kennzahlen im Überblick</h2>
+        <p class="section-desc">Alle Werte basieren auf simuliertem Paper-Trading. Performance ist nicht repräsentativ für zukünftige Ergebnisse echter Anlagen.</p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <p class="kpi-card__label">Gesamt-Portfolio-Wert</p>
+          <p class="kpi-card__value" id="kpiPortfolioValue">€ 0</p>
+          <p class="kpi-card__delta" id="kpiPortfolioDelta">€ 0 seit Start</p>
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-card__label">Performance seit Start</p>
+          <p class="kpi-card__value" id="kpiReturn">0 %</p>
+          <p class="kpi-card__delta" id="kpiReturnDelta">vs. 0 % Benchmark</p>
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-card__label">Investiertes Kapital</p>
+          <p class="kpi-card__value" id="kpiInvestedCapital">€ 0</p>
+          <p class="kpi-card__note">Aktuell offene Positionen</p>
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-card__label">Unrealized P&amp;L</p>
+          <p class="kpi-card__value" id="kpiUnrealizedPnl">€ 0</p>
+          <p class="kpi-card__note">Nur offene Positionen</p>
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-card__label">Cash-Reserve</p>
+          <p class="kpi-card__value" id="kpiCashReserve">€ 0</p>
+          <p class="kpi-card__note">Nicht investiertes Paper-Kapital</p>
+        </div>
+
+        <div class="kpi-card">
+          <p class="kpi-card__label">Hit Ratio</p>
+          <p class="kpi-card__value" id="kpiHitRatio">0 %</p>
+          <p class="kpi-card__note">Gewinnertrades / Alle Trades</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="footer__legal">© 2026 Repertum Capital Management · Paper Portfolio · Kein Investment-Angebot</p>
+    </div>
+  </footer>
+
+  <script src="data-config.js"></script>
+  <script src="trade-data.js"></script>
+  <script src="nav.js"></script>
+  <script>
+    function setSignedClass(el, value) {
+      if (!el) return;
+      el.classList.remove("positive", "negative");
+      if (value > 0) el.classList.add("positive");
+      if (value < 0) el.classList.add("negative");
+    }
+
+    tradeData.initTradeData(({ metrics }) => {
+      document.getElementById("snapshotDate").textContent = "Live aus Google Sheets";
+      document.getElementById("snapshotPortfolioValue").textContent = tradeData.formatCurrency(metrics.portfolioValue);
+      document.getElementById("snapshotReturn").textContent = tradeData.formatPercent(metrics.totalReturnPct, 2);
+      document.getElementById("snapshotBenchmark").textContent = tradeData.formatPercent(metrics.benchmarkReturnPct, 2);
+      document.getElementById("snapshotAlpha").textContent = tradeData.formatPercent(metrics.alphaPct, 2);
+      document.getElementById("snapshotStartDate").textContent = metrics.startDate;
+      document.getElementById("snapshotPositions").textContent = metrics.openCount;
+
+      document.getElementById("kpiPortfolioValue").textContent = tradeData.formatCurrency(metrics.portfolioValue);
+      document.getElementById("kpiPortfolioDelta").textContent = `${tradeData.formatCurrency(metrics.totalPnl)} seit Start`;
+      document.getElementById("kpiReturn").textContent = tradeData.formatPercent(metrics.totalReturnPct, 2);
+      document.getElementById("kpiReturnDelta").textContent = `vs. ${tradeData.formatPercent(metrics.benchmarkReturnPct, 2)} Benchmark`;
+      document.getElementById("kpiInvestedCapital").textContent = tradeData.formatCurrency(metrics.totalInvested);
+      document.getElementById("kpiUnrealizedPnl").textContent = tradeData.formatCurrency(metrics.totalUnrealizedPnl);
+      document.getElementById("kpiCashReserve").textContent = tradeData.formatCurrency(metrics.cashReserve);
+      document.getElementById("kpiHitRatio").textContent = tradeData.formatPercent(metrics.hitRatio, 1);
+
+      setSignedClass(document.getElementById("snapshotReturn"), metrics.totalReturnPct);
+      setSignedClass(document.getElementById("snapshotAlpha"), metrics.alphaPct);
+      setSignedClass(document.getElementById("kpiPortfolioDelta"), metrics.totalPnl);
+      setSignedClass(document.getElementById("kpiReturn"), metrics.totalReturnPct);
+      setSignedClass(document.getElementById("kpiUnrealizedPnl"), metrics.totalUnrealizedPnl);
+    });
+  </script>
+</body>
+</html>

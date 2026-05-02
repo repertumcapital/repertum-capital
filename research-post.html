@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research Post | Repertum Capital Management</title>
+  <meta name="description" content="Research-Beitrag von Repertum Capital Management.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav" role="navigation" aria-label="Hauptnavigation">
+    <div class="container">
+      <div class="nav__inner">
+        <a href="index.html" class="nav__logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+           <rect width="32" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+            <path d="M8 22V10h8a4 4 0 0 1 0 8h-4l5 4" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M8 10h8" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <circle cx="22" cy="20" r="3" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" fill="none"/>
+          </svg>
+          <span class="nav__logo-text">Repertum Capital<span class="nav__logo-sub">Management</span></span>
+        </a>
+
+        <ul class="nav__links" role="list">
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="trades.html">Trades & Performance</a></li>
+          <li><a href="research.html" class="active">Research</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+
+        <div class="nav__actions">
+          <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"></button>
+          <button class="nav__hamburger" aria-label="Menü öffnen" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav__mobile" aria-label="Mobile Navigation">
+      <a href="index.html">Overview</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="trades.html">Trades & Performance</a>
+      <a href="research.html" class="active">Research</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </nav>
+
+  <section class="page-hero" style="padding-bottom: clamp(var(--space-12), 8vw, var(--space-20));">
+    <div class="container">
+      <div id="postMeta" class="article-header-meta"></div>
+      <div id="postTags" class="article-card__tags" style="margin-bottom: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-2);"></div>
+      <h1 id="postTitle" style="font-family: var(--font-display); font-style: italic; font-size: clamp(1.9rem, 4vw, 3.2rem); color: #fff; line-height: 1.1; margin-bottom: var(--space-4);">
+        Beitrag wird geladen
+      </h1>
+      <p id="postExcerpt" style="color: rgba(255,255,255,0.65); font-size: var(--text-base); max-width: 65ch;"></p>
+    </div>
+  </section>
+
+  <main>
+    <article class="section">
+      <div class="container container--default">
+        <div id="postNotFound" class="card text-center" style="padding: var(--space-12); display: none;">
+          <p class="section-label">Nicht gefunden</p>
+          <h2 class="section-title">Dieser Beitrag existiert nicht</h2>
+          <p class="section-desc" style="margin-inline: auto;">Bitte gehe zurück zur Research-Übersicht und wähle einen gültigen Beitrag aus.</p>
+          <div style="margin-top: var(--space-5);">
+            <a href="research.html" class="btn btn--outline-dark">Zurück zur Übersicht</a>
+          </div>
+        </div>
+
+        <div id="postWrapper" style="display: none;">
+          <div id="postHeroImageWrap" class="card" style="padding: 0; overflow: hidden; margin-bottom: var(--space-8); display: none;">
+            <img id="postHeroImage" src="" alt="" style="width: 100%; aspect-ratio: 16 / 9; object-fit: cover;">
+          </div>
+
+          <div id="postActions" class="flex-between" style="margin-bottom: var(--space-8);"></div>
+
+          <div id="postBody" class="article-body"></div>
+
+          <div class="disclaimer" style="margin-top: var(--space-8);">
+            <span class="disclaimer__icon">⚠</span>
+            <p><strong>Disclaimer:</strong> Diese Analyse ist Teil eines Paper-Portfolios zu Lernzwecken. Sie stellt kein Investmentangebot dar und spiegelt ausschließlich eine persönliche Meinung wider.</p>
+          </div>
+
+          <div class="flex-between" style="margin-top: var(--space-12); padding-top: var(--space-8); border-top: 1px solid var(--color-divider);">
+            <a href="research.html" class="btn btn--outline-dark">Zurück zur Übersicht</a>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <p class="footer__brand-name">Repertum Capital Management</p>
+          <p class="footer__brand-tagline">Student-Managed Equity Portfolio</p>
+          <p class="footer__brand-desc">
+            Papierbasiertes Portfolio zur Dokumentation von Investmentfähigkeiten. Kein echtes Kapital. Nur Lernzwecke.
+          </p>
+        </div>
+
+        <div>
+          <p class="footer__col-title">Navigation</p>
+          <ul class="footer__links">
+            <li><a href="index.html">Fund Overview</a></li>
+            <li><a href="portfolio.html">Portfolio Holdings</a></li>
+            <li><a href="trades.html">Trades & Performance</a></li>
+            <li><a href="research.html">Research & Insights</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="footer__col-title">Über den Fund</p>
+          <ul class="footer__links">
+            <li><a href="about.html">Über mich</a></li>
+            <li><a href="contact.html">Kontakt</a></li>
+            <li><a href="contact.html#impressum">Impressum</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <p class="footer__legal">© 2026 Repertum Capital Management · Paper Portfolio · Kein Investment-Angebot</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script src="research-post.js"></script>
+</body>
+</html>
