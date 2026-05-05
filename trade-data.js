@@ -134,8 +134,72 @@
     };
   }
 
+  // ── Live MSCI World Benchmark via Yahoo Finance ──────────────────────────
+  // Verwendet EUNL.DE (iShares Core MSCI World UCITS ETF, EUR, XETRA).
+  // Der Return wird ab dem ersten Trade-Datum berechnet.
+  async function fetchLiveBenchmarkReturn(startDateStr) {
+    try {
+      const ticker = portfolioConfig.benchmarkTicker || "EUNL.DE";
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=3y`;
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+
+      const res = await fetch(proxyUrl);
+      if (!res.ok) return null;
+      const json = await res.json();
+
+      const result = json?.chart?.result?.[0];
+      if (!result) return null;
+
+      const timestamps = result.timestamp;
+      const closes = result.indicators?.quote?.[0]?.close;
+      if (!timestamps || !closes || timestamps.length === 0) return null;
+
+      // Datum in Unix-Timestamp umrechnen (DD.MM.YYYY oder YYYY-MM-DD)
+      function parseDateTs(str) {
+        if (!str || str === "—") return null;
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return Date.parse(str);
+        const parts = str.split(".");
+        if (parts.length === 3) return Date.parse(`${parts[2]}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`);
+        return Date.parse(str);
+      }
+
+      const startTs = parseDateTs(startDateStr);
+
+      // Ersten validen Kurs ab Startdatum finden
+      let startPrice = null;
+      if (startTs) {
+        const startTsSec = startTs / 1000;
+        for (let i = 0; i < timestamps.length; i++) {
+          if (timestamps[i] >= startTsSec && closes[i] != null) {
+            startPrice = closes[i];
+            break;
+          }
+        }
+      }
+      // Fallback: ältester verfügbarer Kurs
+      if (!startPrice) {
+        for (let i = 0; i < closes.length; i++) {
+          if (closes[i] != null) { startPrice = closes[i]; break; }
+        }
+      }
+
+      // Aktuellster valider Kurs
+      let currentPrice = null;
+      for (let i = closes.length - 1; i >= 0; i--) {
+        if (closes[i] != null) { currentPrice = closes[i]; break; }
+      }
+
+      if (!startPrice || !currentPrice) return null;
+      return ((currentPrice - startPrice) / startPrice) * 100;
+    } catch (e) {
+      console.warn("MSCI World Benchmark konnte nicht live geladen werden:", e);
+      return null;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   function calculateMetrics(trades) {
-    const startCapital = portfolioConfig.startCapital || 1000000;
+    const startCapital = portfolioConfig.startCapital || 2000;
     const benchmarkReturnPct = portfolioConfig.benchmarkReturnPct || 0;
 
     const openTrades = trades.filter(t => !t.isClosed);
@@ -221,15 +285,25 @@
       state.trades = [];
       state.metrics = calculateMetrics([]);
       state.loaded = true;
-      return state;
+    } else {
+      const dataRows = rows.slice(1);
+      const trades = dataRows.map(normalizeTrade);
+      state.trades = trades;
+      state.metrics = calculateMetrics(trades);
+      state.loaded = true;
     }
 
-    const dataRows = rows.slice(1);
-    const trades = dataRows.map(normalizeTrade);
-
-    state.trades = trades;
-    state.metrics = calculateMetrics(trades);
-    state.loaded = true;
+    // Live-Benchmark nachladen und Metrics aktualisieren
+    try {
+      const liveBenchmark = await fetchLiveBenchmarkReturn(state.metrics.startDate);
+      if (liveBenchmark !== null) {
+        state.metrics.benchmarkReturnPct = liveBenchmark;
+        state.metrics.alphaPct = state.metrics.totalReturnPct - liveBenchmark;
+        state.metrics.benchmarkLive = true;
+      }
+    } catch (e) {
+      // Fallback auf Konfigurationswert – kein Fehler nach außen
+    }
 
     return state;
   }

@@ -4,9 +4,10 @@ window.SITE_DATA_CONFIG = {
   },
 
   portfolio: {
-    startCapital: 1000000,
+    startCapital: 2000,
     benchmarkLabel: "MSCI World",
-    benchmarkReturnPct: 4.12,
+    benchmarkTicker: "EUNL.DE",   // iShares Core MSCI World UCITS ETF (EUR, XETRA)
+    benchmarkReturnPct: 0,         // Fallback – wird live via Yahoo Finance überschrieben
     riskFreeRatePct: 2.5
   }
 };
