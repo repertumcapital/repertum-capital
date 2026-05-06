@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Research & Insights | Repertum Capital Management</title>
+  <meta name="description" content="Research, Equity Notes und Makrokommentare von Repertum Capital Management.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav" role="navigation" aria-label="Hauptnavigation">
+    <div class="container">
+      <div class="nav__inner">
+        <a href="index.html" class="nav__logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+           <rect width="32" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+            <path d="M8 22V10h8a4 4 0 0 1 0 8h-4l5 4" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M8 10h8" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+            <circle cx="22" cy="20" r="3" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" fill="none"/>
+          </svg>
+          <span class="nav__logo-text">Repertum Capital<span class="nav__logo-sub">Management</span></span>
+        </a>
+
+        <ul class="nav__links" role="list">
+          <li><a href="index.html">Overview</a></li>
+          <li><a href="portfolio.html">Portfolio</a></li>
+          <li><a href="trades.html">Trades & Performance</a></li>
+          <li><a href="research.html" class="active">Research</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="contact.html">Contact</a></li>
+        </ul>
+
+        <div class="nav__actions">
+          <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"></button>
+          <button class="nav__hamburger" aria-label="Menü öffnen" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav__mobile" aria-label="Mobile Navigation">
+      <a href="index.html">Overview</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="trades.html">Trades & Performance</a>
+      <a href="research.html" class="active">Research</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </nav>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="page-hero__eyebrow">Research & Insights</p>
+      <h1 class="page-hero__title">Analysen & Kommentare</h1>
+      <p class="page-hero__desc">
+        Equity Research, Makrokommentare und dokumentierte Investment-Überlegungen.
+      </p>
+    </div>
+  </section>
+
+  <main>
+    <section class="section">
+      <div class="container">
+        <div class="flex-between" style="margin-bottom: var(--space-6);">
+          <div>
+            <span class="section-label">Archiv</span>
+            <h2 class="section-title" style="margin-bottom: 0;">Alle Beiträge</h2>
+          </div>
+
+          <div id="researchMeta" class="note"></div>
+        </div>
+
+        <div id="researchEmptyState" class="card text-center" style="padding: var(--space-12); display: none;">
+          <p class="section-label">Noch leer</p>
+          <h3 class="section-title" style="margin-bottom: var(--space-3);">Aktuell sind noch keine Beiträge veröffentlicht</h3>
+          <p class="section-desc" style="margin-inline: auto;">
+            Sobald es einen Eintrag gibt, wird dieser hier angezeigt.
+          </p>
+        </div>
+
+        <div id="researchGrid" class="articles-grid"></div>
+
+        <div id="researchPagination" class="pagination" style="margin-top: var(--space-8); display: none;"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div>
+          <p class="footer__brand-name">Repertum Capital Management</p>
+          <p class="footer__brand-tagline">Student-Managed Equity Portfolio</p>
+          <p class="footer__brand-desc">
+            Papierbasiertes Portfolio zur Dokumentation von Investmentfähigkeiten. Kein echtes Kapital. Nur Lernzwecke.
+          </p>
+        </div>
+
+        <div>
+          <p class="footer__col-title">Navigation</p>
+          <ul class="footer__links">
+            <li><a href="index.html">Fund Overview</a></li>
+            <li><a href="portfolio.html">Portfolio Holdings</a></li>
+            <li><a href="trades.html">Trades & Performance</a></li>
+            <li><a href="research.html">Research & Insights</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="footer__col-title">Über den Fund</p>
+          <ul class="footer__links">
+            <li><a href="about.html">Über mich</a></li>
+            <li><a href="contact.html">Kontakt</a></li>
+            <li><a href="contact.html#impressum">Impressum</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer__bottom">
+        <p class="footer__legal">© 2026 Repertum Capital Management · Kein lizenziertes Investment-Angebot</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="nav.js"></script>
+  <script src="research.js"></script>
+</body>
+</html>

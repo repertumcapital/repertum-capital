@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt &amp; Impressum – Repertum Capital Management</title>
+<meta name="description" content="Kontakt zu Repertum Capital Management – Anfragen, Feedback und Impressum.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══ NAVIGATION ══════════════════════════════════════════ -->
+<nav class="nav" role="navigation">
+  <div class="container">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="6" fill="rgba(255,255,255,0.08)"/>
+          <path d="M8 22V10h8a4 4 0 0 1 0 8h-4l5 4" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <path d="M8 10h8" stroke="#D4A847" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+          <circle cx="22" cy="20" r="3" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" fill="none"/>
+        </svg>
+        <span class="nav__logo-text">Repertum Capital<span class="nav__logo-sub">Management</span></span>
+      </a>
+      <ul class="nav__links" role="list">
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="portfolio.html">Portfolio</a></li>
+        <li><a href="trades.html">Trades &amp; Performance</a></li>
+        <li><a href="research.html">Research</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" data-theme-toggle aria-label="Toggle theme"></button>
+        <button class="nav__hamburger" aria-label="Menü öffnen" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </div>
+  <nav class="nav__mobile">
+    <a href="index.html">Overview</a><a href="portfolio.html">Portfolio</a><a href="trades.html">Trades &amp; Performance</a><a href="research.html">Research</a><a href="about.html">About</a><a href="contact.html">Contact</a>
+  </nav>
+</nav>
+
+<!-- ══ PAGE HERO ════════════════════════════════════════════ -->
+<section class="page-hero">
+  <div class="container">
+    <p class="page-hero__eyebrow">Kontakt</p>
+    <h1 class="page-hero__title">Kontakt &amp; Impressum</h1>
+    <p class="page-hero__desc">Fragen zum Portfolio, Feedback zu Analysen oder Bewerbungs- bzw. Networking-Anfragen – ich freue mich über jede Nachricht.</p>
+  </div>
+</section>
+
+<main>
+  <section class="section">
+    <div class="container">
+      <div class="grid-2" style="align-items:start;gap:var(--space-10);">
+
+        <!-- Contact Form -->
+        <div>
+          <span class="section-label">Nachricht senden</span>
+          <h2 class="section-title">Schreib mir</h2>
+
+          <!--
+            ⚠ KONTAKTFORMULAR-BACKEND:
+            Dieses Formular ist ein HTML-Frontend ohne Backend.
+            In WordPress: Formular-Plugin wie Contact Form 7 oder WPForms verwenden.
+            Alternativ: mailto: Fallback unten nutzen.
+          -->
+          <form
+            id="contact-form"
+            action="https://formspree.io/f/mwvwzeoe"
+            method="POST"
+            style="margin-top: var(--space-6);"
+          >
+            <input type="hidden" name="_subject" value="Neue Nachricht über Repertum Capital Management">
+            <input type="hidden" name="_captcha" value="false">
+
+            <div class="grid-2" style="gap: var(--space-4);">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="name">Vorname</label>
+                <input class="form-input" type="text" id="name" name="first_name" required placeholder="Max" autocomplete="given-name">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="lastname">Nachname</label>
+                <input class="form-input" type="text" id="lastname" name="last_name" required placeholder="Mustermann" autocomplete="family-name">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: var(--space-5);">
+              <label class="form-label" for="email">E-Mail-Adresse</label>
+              <input class="form-input" type="email" id="email" name="email" required placeholder="max@beispiel.de" autocomplete="email">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="topic">Betreff</label>
+              <select class="form-input form-select" id="topic" name="topic" required>
+                <option value="">Thema auswählen</option>
+                <option value="Networking / Karriere">Networking / Karriere</option>
+                <option value="Research-Feedback">Research-Feedback</option>
+                <option value="Portfolio-Frage">Portfolio-Frage</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="message">Nachricht</label>
+              <textarea class="form-textarea" id="message" name="message" required placeholder="Deine Nachricht"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary" style="width: 100%; justify-content: center;">
+              Nachricht senden
+            </button>
+          </form>
+
+          <!-- Direct email fallback -->
+          <p class="note" style="margin-top:var(--space-4);">
+            Oder direkt per E-Mail:
+            <!-- ⚠ E-MAIL-ADRESSE HIER EINTRAGEN -->
+            <a href="mailto:info@repertumcapital.com" style="color:var(--color-gold-text);">info@repertumcapital.com</a>
+          </p>
+        </div>
+
+        <!-- Contact Info + Social -->
+        <div>
+          <span class="section-label">Direktkontakt</span>
+          <h2 class="section-title">Kontaktinfos</h2>
+
+          <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-top:var(--space-6);">
+            <!-- ⚠ KONTAKTDATEN ANPASSEN -->
+            <div class="card" style="display:flex;gap:var(--space-4);align-items:flex-start;">
+              <div style="width:42px;height:42px;background:var(--color-primary-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <div>
+                <p style="font-weight:700;font-size:var(--text-sm);margin-bottom:2px;">E-Mail</p>
+                <a href="mailto:info@repertumcapital.com" style="font-size:var(--text-sm);color:var(--color-text-muted);">info@repertumcapital.com</a>
+              </div>
+            </div>
+
+            <div class="card" style="display:flex;gap:var(--space-4);align-items:flex-start;">
+              <div style="width:42px;height:42px;background:var(--color-primary-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-primary)" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              </div>
+              <div>
+                <p style="font-weight:700;font-size:var(--text-sm);margin-bottom:2px;">LinkedIn</p>
+                <!-- ⚠ LINKEDIN-URL HIER EINTRAGEN -->
+                <a href="#" target="_blank" rel="noopener noreferrer" style="font-size:var(--text-sm);color:var(--color-text-muted);">www.linkedin.com/in/timo-held-310971251</a>
+              </div>
+            </div>
+
+            <div class="card" style="display:flex;gap:var(--space-4);align-items:flex-start;">
+              <div style="width:42px;height:42px;background:var(--color-surface-2);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <p style="font-weight:700;font-size:var(--text-sm);margin-bottom:2px;">Standort</p>
+                <p style="font-size:var(--text-sm);color:var(--color-text-muted);">Frankfurt am Main, Deutschland</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="disclaimer" style="margin-top:var(--space-6);">
+            <span class="disclaimer__icon">ℹ</span>
+            <p>Repertum Capital verwaltet ausschließlich eigenes Kapital. Anfragen für externe Investmentdienstleistungen können nicht bearbeitet werden.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ IMPRESSUM ══════════════════════════════════════════ -->
+  <section class="section section--alt" id="impressum">
+    <div class="container container--default">
+      <span class="section-label">Rechtliches</span>
+      <h2 class="section-title">Impressum &amp; Disclaimer</h2>
+      <p class="section-desc">Pflichtangaben gemäß § 5 TMG sowie Haftungsausschluss.</p>
+
+      <!-- ⚠ IMPRESSUM: Vollständige Angaben gemäß § 5 TMG hier eintragen -->
+      <div class="impressum-block" style="margin-top:var(--space-8);">
+        <h3>Angaben gemäß § 5 TMG</h3>
+        <p>
+          <strong>Timo Held</strong><br>
+          Olof-Palme-Straße 31<br>
+          60439 Frankfurt am Main<br>
+          Deutschland
+        </p>
+        <p>
+          E-Mail: <a href="mailto:info@repertumcapital.com">info@repertumcapital.com</a>
+        </p>
+
+        <h3>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h3>
+        <p>
+          Timo Held<br>
+          lof-Palme-Straße 31<br>
+          60439 Frankfurt am Main<br>
+          Deutschland
+        </p>
+
+        <h3>Haftungsausschluss – Investmentbezogener Hinweis</h3>
+        <p>Diese Website dokumentiert den Umgang mit eigenem Kapital zu Lern- und Track-Record-Zwecken. <strong>Es handelt sich nicht um ein zugelassenes Finanzdienstleistungsangebot, keine Anlageberatung, kein Investmentangebot und kein öffentliches Angebot von Finanzinstrumenten.</strong></p>
+        <p>Kein Kapital Dritter wird verwaltet. Die Inhalte dienen ausschließlich der eigenen Weiterbildung und der Dokumentation analytischer Fähigkeiten. Sie sind nicht als Empfehlung zum Kauf oder Verkauf von Wertpapieren zu verstehen.</p>
+        <p>Vergangene Performance ist kein Indikator für zukünftige Ergebnisse. Investitionen in Wertpapiere sind mit Risiken verbunden, inklusive des vollständigen Kapitalverlustes.</p>
+
+        <h3>Haftung für Inhalte</h3>
+        <p>Die Inhalte dieser Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte übernehme ich keine Gewähr. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist ohne konkrete Hinweise auf Rechtsverletzungen nicht zumutbar.</p>
+
+        <h3>Urheberrecht</h3>
+        <p>Die durch mich erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Beiträge Dritter sind als solche gekennzeichnet. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung.</p>
+
+        <h3>Datenschutz</h3>
+        <p>Diese Website erhebt keine personenbezogenen Daten über Tracking-Dienste. Das Kontaktformular ist clientseitig implementiert (kein Backend). Eine separate Datenschutzerklärung ist bei Aktivierung des Kontaktformulars mit Backend erforderlich.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div>
+        <p class="footer__brand-name">Repertum Capital Management</p>
+        <p class="footer__brand-tagline">Student-Managed Equity Portfolio</p>
+        <p class="footer__brand-desc">Eigenkapital-Portfolio zur Dokumentation und zum Aufbau eines nachvollziehbaren Track Records. Kein Kundengeld. Kein lizenziertes Investmentangebot.</p>
+      </div>
+      <div>
+        <p class="footer__col-title">Navigation</p>
+        <ul class="footer__links">
+          <li><a href="index.html">Fund Overview</a></li>
+          <li><a href="portfolio.html">Portfolio Holdings</a></li>
+          <li><a href="trades.html">Trades &amp; Performance</a></li>
+          <li><a href="research.html">Research &amp; Insights</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer__col-title">Über den Fund</p>
+        <ul class="footer__links">
+          <li><a href="about.html">Über mich</a></li>
+          <li><a href="contact.html">Kontakt</a></li>
+          <li><a href="contact.html#impressum">Impressum</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <p class="footer__legal">© 2026 Repertum Capital Management · Kein lizenziertes Investment-Angebot</p>
+    </div>
+  </div>
+</footer>
+
+<script src="nav.js"></script>
+</body>
+</html>
