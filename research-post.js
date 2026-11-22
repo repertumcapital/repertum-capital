@@ -1,27 +1,6 @@
-function formatGermanDate(dateString) {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return dateString;
-  return new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(date);
-}
-
 function getPostId() {
   const url = new URL(window.location.href);
   return url.searchParams.get('id');
-}
-
-function createBadge(tag) {
-  const normalized = String(tag).toLowerCase();
-  let cls = 'badge badge--gray';
-
-  if (['equity research', 'equity', 'technology', 'industrials', 'pharma'].includes(normalized)) cls = 'badge badge--navy';
-  if (['macro', 'zinsen', 'europe', 'dach'].includes(normalized)) cls = 'badge badge--gold';
-  if (['buy', 'healthcare', 'long'].includes(normalized)) cls = 'badge badge--green';
-
-  return `<span class="${cls}">${tag}</span>`;
 }
 
 function renderContentBlock(block) {
@@ -43,6 +22,27 @@ function renderContentBlock(block) {
   }
 }
 
+function renderBlocks(blocks) {
+  return (blocks || []).map(renderContentBlock).join('');
+}
+
+/* Analyses separate facts from opinion: "facts" and "opinion" arrays are
+   rendered under their own headings. "content" is kept for free-form text. */
+function renderPostBody(post) {
+  const parts = [];
+  if (post.content && post.content.length) parts.push(renderBlocks(post.content));
+  if (post.facts && post.facts.length) {
+    parts.push(`<section class="analysis-part analysis-part--facts"><h2>Facts</h2><p class="analysis-part__note">Reported figures and events, with sources where given.</p>${renderBlocks(post.facts)}</section>`);
+  }
+  if (post.opinion && post.opinion.length) {
+    parts.push(`<section class="analysis-part analysis-part--opinion"><h2>My opinion</h2><p class="analysis-part__note">My personal assessment. Not a recommendation.</p>${renderBlocks(post.opinion)}</section>`);
+  }
+  if (!parts.length && post.pdf) {
+    parts.push(`<p>The full analysis, including the separation of facts and my opinion, is in the PDF.</p>`);
+  }
+  return parts.join('');
+}
+
 async function initResearchPost() {
   const postId = getPostId();
   const notFound = document.getElementById('postNotFound');
@@ -54,8 +54,7 @@ async function initResearchPost() {
   }
 
   try {
-    const response = await fetch('./data/research-posts.json', { cache: 'no-store' });
-    const posts = await response.json();
+    const posts = await loadResearchPosts();
     const post = posts.find(entry => entry.id === postId);
 
     if (!post) {
@@ -69,34 +68,41 @@ async function initResearchPost() {
     document.getElementById('postExcerpt').textContent = post.excerpt || '';
 
     document.getElementById('postMeta').innerHTML = `
-      <span>${formatGermanDate(post.date)}</span>
-      ${post.readTime ? `<span>${post.readTime}</span>` : ''}
-      <span>${post.category || 'Research'}</span>
+      <span>${formatPostDate(post.date)}</span>
+      <span>By ${escapeHtml(post.author || DEFAULT_AUTHOR)}</span>
+      ${post.ticker ? `<span>Ticker: ${escapeHtml(post.ticker)}</span>` : ''}
+      <span>${escapeHtml(post.category || 'Research')}</span>
     `;
 
-    document.getElementById('postTags').innerHTML = (post.tags || []).map(createBadge).join('');
+    document.getElementById('postTags').innerHTML = [
+      tickerBadge(post),
+      positionHeldBadge(post),
+      ...(post.tags || []).map(createTagBadge)
+    ].join('');
 
     const imageWrap = document.getElementById('postHeroImageWrap');
     const image = document.getElementById('postHeroImage');
-
     if (post.image) {
       image.src = post.image;
       image.alt = post.title;
       imageWrap.style.display = 'block';
     }
 
-    const actions = document.getElementById('postActions');
-    actions.innerHTML = `
-      <div class="note" style="font-style: normal;">
-        ${post.category || 'Research'}
-      </div>
+    document.getElementById('postDisclosure').innerHTML = `
+      <strong>${positionHeldLabel(post)}.</strong>
+      ${post.positionNote ? escapeHtml(post.positionNote) + ' ' : ''}
+      Author: ${escapeHtml(post.author || DEFAULT_AUTHOR)} · Published: ${formatPostDate(post.date)}${post.updated ? ` · Updated: ${formatPostDate(post.updated)}` : ''}
+    `;
+
+    document.getElementById('postActions').innerHTML = `
+      <div class="note" style="font-style: normal;">${escapeHtml(post.category || 'Research')}</div>
       <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        ${post.pdf ? `<a href="${post.pdf}" class="btn btn--outline-dark" target="_blank" rel="noopener noreferrer">PDF öffnen</a>` : ''}
-        <a href="research.html" class="btn btn--outline-dark">Zur Übersicht</a>
+        ${post.pdf ? `<a href="${escapeHtml(post.pdf)}" class="btn btn--outline-dark" target="_blank" rel="noopener noreferrer">Download PDF</a>` : ''}
+        <a href="research.html" class="btn btn--outline-dark">All analyses</a>
       </div>
     `;
 
-    document.getElementById('postBody').innerHTML = (post.content || []).map(renderContentBlock).join('');
+    document.getElementById('postBody').innerHTML = renderPostBody(post);
 
     wrapper.style.display = 'block';
   } catch (error) {
