@@ -758,7 +758,7 @@ a, button, [role="button"] {
   .hero-grid { grid-template-columns: 1fr; }
 }
 
-/* ─── FUND OVERVIEW GRID ─────────────────────────────────── */
+/* ─── OVERVIEW GRID ─────────────────────────────────── */
 .overview-card {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
@@ -1206,6 +1206,12 @@ a, button, [role="button"] {
 .footer__legal {
   font-size: var(--text-xs);
   color: rgba(255,255,255,0.3);
+}
+.footer__disclaimer {
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: rgba(255,255,255,0.6);
+  max-width: 70ch;
 }
 .footer__pplx a {
   font-size: var(--text-xs);

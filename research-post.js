@@ -63,7 +63,7 @@ async function initResearchPost() {
       return;
     }
 
-    document.title = `${post.title} | Repertum Capital Management`;
+    document.title = `${post.title} | Repertum Capital`;
 
     document.getElementById('postTitle').textContent = post.title;
     document.getElementById('postExcerpt').textContent = post.excerpt || '';
