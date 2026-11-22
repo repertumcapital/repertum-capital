@@ -63,68 +63,21 @@
     <div class="container">
       <div class="grid-2" style="align-items:start;gap:var(--space-10);">
 
-        <!-- Contact Form -->
+        <!-- Contact via email (no form, no third-party form service) -->
         <div>
           <span class="section-label">Nachricht senden</span>
           <h2 class="section-title">Schreib mir</h2>
 
-          <!--
-            ⚠ KONTAKTFORMULAR-BACKEND:
-            Dieses Formular ist ein HTML-Frontend ohne Backend.
-            In WordPress: Formular-Plugin wie Contact Form 7 oder WPForms verwenden.
-            Alternativ: mailto: Fallback unten nutzen.
-          -->
-          <form
-            id="contact-form"
-            action="https://formspree.io/f/mwvwzeoe"
-            method="POST"
-            style="margin-top: var(--space-6);"
-          >
-            <input type="hidden" name="_subject" value="Neue Nachricht über Repertum Capital Management">
-            <input type="hidden" name="_captcha" value="false">
+          <p style="margin-top: var(--space-6); line-height: 1.7;">
+            Am einfachsten erreichst du mich per E-Mail. Der Button öffnet dein E-Mail-Programm mit meiner Adresse.
+          </p>
 
-            <div class="grid-2" style="gap: var(--space-4);">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" for="name">Vorname</label>
-                <input class="form-input" type="text" id="name" name="first_name" required placeholder="Max" autocomplete="given-name">
-              </div>
+          <a href="mailto:info@repertumcapital.com?subject=Repertum%20Capital%20%E2%80%93%20Kontakt" class="btn btn--primary" style="width: 100%; justify-content: center; margin-top: var(--space-6);">
+            E-Mail schreiben
+          </a>
 
-              <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label" for="lastname">Nachname</label>
-                <input class="form-input" type="text" id="lastname" name="last_name" required placeholder="Mustermann" autocomplete="family-name">
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-top: var(--space-5);">
-              <label class="form-label" for="email">E-Mail-Adresse</label>
-              <input class="form-input" type="email" id="email" name="email" required placeholder="max@beispiel.de" autocomplete="email">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="topic">Betreff</label>
-              <select class="form-input form-select" id="topic" name="topic" required>
-                <option value="">Thema auswählen</option>
-                <option value="Networking / Karriere">Networking / Karriere</option>
-                <option value="Research-Feedback">Research-Feedback</option>
-                <option value="Portfolio-Frage">Portfolio-Frage</option>
-                <option value="Sonstiges">Sonstiges</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="message">Nachricht</label>
-              <textarea class="form-textarea" id="message" name="message" required placeholder="Deine Nachricht"></textarea>
-            </div>
-
-            <button type="submit" class="btn btn--primary" style="width: 100%; justify-content: center;">
-              Nachricht senden
-            </button>
-          </form>
-
-          <!-- Direct email fallback -->
           <p class="note" style="margin-top:var(--space-4);">
-            Oder direkt per E-Mail:
-            <!-- ⚠ E-MAIL-ADRESSE HIER EINTRAGEN -->
+            Oder Adresse kopieren:
             <a href="mailto:info@repertumcapital.com" style="color:var(--color-gold-text);">info@repertumcapital.com</a>
           </p>
         </div>
@@ -152,8 +105,7 @@
               </div>
               <div>
                 <p style="font-weight:700;font-size:var(--text-sm);margin-bottom:2px;">LinkedIn</p>
-                <!-- ⚠ LINKEDIN-URL HIER EINTRAGEN -->
-                <a href="#" target="_blank" rel="noopener noreferrer" style="font-size:var(--text-sm);color:var(--color-text-muted);">www.linkedin.com/in/timo-held-310971251</a>
+                <a href="https://www.linkedin.com/in/timo-held-310971251" target="_blank" rel="noopener noreferrer" style="font-size:var(--text-sm);color:var(--color-text-muted);">www.linkedin.com/in/timo-held-310971251</a>
               </div>
             </div>
 
@@ -218,7 +170,7 @@
         <p>Die durch mich erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Beiträge Dritter sind als solche gekennzeichnet. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung.</p>
 
         <h3>Datenschutz</h3>
-        <p>Diese Website erhebt keine personenbezogenen Daten über Tracking-Dienste. Das Kontaktformular ist clientseitig implementiert (kein Backend). Eine separate Datenschutzerklärung ist bei Aktivierung des Kontaktformulars mit Backend erforderlich.</p>
+        <p>Diese Website erhebt keine personenbezogenen Daten über Tracking-Dienste. Es gibt kein Kontaktformular; Kontakt ist nur per E-Mail möglich.</p>
       </div>
     </div>
   </section>

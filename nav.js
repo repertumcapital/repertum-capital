@@ -133,20 +133,6 @@
       });
     });
 
-    /* ─── CONTACT FORM ───────────────────────────────────── */
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-      contactForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        const btn = contactForm.querySelector('button[type="submit"]');
-        const orig = btn.textContent;
-        btn.textContent = 'Nachricht gesendet ✓';
-        btn.disabled = true;
-        btn.style.background = 'var(--color-success)';
-        setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.background = ''; }, 4000);
-      });
-    }
-
     /* ─── SCROLL REVEAL ──────────────────────────────────── */
     if ('IntersectionObserver' in window) {
       const io = new IntersectionObserver((entries) => {
