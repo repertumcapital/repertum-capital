@@ -160,12 +160,16 @@
     const problems = [];
 
     const ticker = String(cell("ticker")).trim();
-    const name = String(cell("name")).trim();
+    const name = String(cell("name")).replace(/\s+/g, " ").trim(); // names may contain line breaks
     const label = ticker || `row ${rowNumber}`;
 
     const entryDate = parseDate(cell("entryDate"));
     const exitDate = parseDate(cell("exitDate"));
-    if (entryDate.error || !entryDate.value) problems.push(`Entry date: ${entryDate.error || "empty"}`);
+    // A missing entry date does not change the return, so the trade stays in
+    // the totals; only its days held and the start date are affected.
+    const dataWarnings = [];
+    if (entryDate.error) problems.push(`Entry date: ${entryDate.error}`);
+    else if (!entryDate.value) dataWarnings.push("entry date missing, so days held and the start date leave this trade out");
     if (exitDate.error) problems.push(`Exit date: ${exitDate.error}`);
 
     const sideRaw = String(cell("side")).trim().toLowerCase();
@@ -190,15 +194,21 @@
     if (price.error) problems.push(`${isClosed ? "Exit" : "Current"} price: ${price.error}`);
 
     // Currency and FX rates (EUR per 1 unit of the trade currency).
-    const currency = col.currency >= 0 ? String(cell("currency")).trim().toUpperCase() || BASE_CURRENCY : BASE_CURRENCY;
+    // "GBX"/"GBp" = prices in pence: the FX columns are then EUR per 1 GBP and
+    // prices are divided by 100.
+    const rawCurrency = col.currency >= 0 ? String(cell("currency")).trim() : "";
+    const isPence = rawCurrency === "GBp" || rawCurrency.toUpperCase() === "GBX";
+    const currency = isPence ? "GBX" : (rawCurrency.toUpperCase() || BASE_CURRENCY);
+    const fxCurrency = isPence ? "GBP" : currency;
+    const unit = isPence ? 0.01 : 1;
     let fxEntry = { value: 1, error: null };
     let fxNow = { value: 1, error: null };
     if (!/^[A-Z]{3}$/.test(currency)) problems.push(`Currency: "${cell("currency")}" is not a 3-letter code`);
     else if (currency !== BASE_CURRENCY) {
       fxEntry = col.fxEntry >= 0 ? parseNumber(cell("fxEntry")) : fail("", "column missing");
       fxNow = col.fxNow >= 0 ? parseNumber(cell("fxNow")) : fail("", "column missing");
-      if (fxEntry.error) problems.push(`FX Entry (${currency}→EUR): ${fxEntry.error}`);
-      if (fxNow.error) problems.push(`FX Exit/Current (${currency}→EUR): ${fxNow.error}`);
+      if (fxEntry.error) problems.push(`FX Entry (EUR per ${fxCurrency}): ${fxEntry.error}`);
+      if (fxNow.error) problems.push(`FX Exit/Current (EUR per ${fxCurrency}): ${fxNow.error}`);
     }
 
     const valid = problems.length === 0;
@@ -207,10 +217,11 @@
     //   long  (P − E) / E × 100,   short  (E − P) / E × 100
     const localReturnPct = valid ? direction * (price.value - entryPrice.value) / entryPrice.value * 100 : NaN;
     // Cost basis in EUR (internal only, never displayed): E × FXentry × shares
-    const cost = valid ? entryPrice.value * fxEntry.value * shares.value : NaN;
+    // (× 0.01 for prices in pence)
+    const cost = valid ? entryPrice.value * unit * fxEntry.value * shares.value : NaN;
     // P&L in EUR (internal only, never displayed):
     //   long  (P × FXnow − E × FXentry) × shares,   short  (E × FXentry − P × FXnow) × shares
-    const pnl = valid ? direction * (price.value * fxNow.value - entryPrice.value * fxEntry.value) * shares.value : NaN;
+    const pnl = valid ? direction * (price.value * fxNow.value - entryPrice.value * fxEntry.value) * unit * shares.value : NaN;
     // Return in EUR (%) = P&L in EUR ÷ cost in EUR × 100 (equals the local return for EUR trades)
     const returnPct = valid ? pnl / cost * 100 : NaN;
 
@@ -222,7 +233,7 @@
     }
 
     // Cross-check with the sheet's own numbers (warnings, not errors).
-    const warnings = [];
+    const warnings = dataWarnings;
     const sheetReturn = parseNumber(cell("sheetReturnPct"));
     if (valid && !sheetReturn.error && Math.abs(sheetReturn.value - localReturnPct) > RETURN_TOLERANCE_PCT) {
       warnings.push(`return ${formatPercent(localReturnPct)} on the site vs ${formatPercent(sheetReturn.value)} in the sheet`);

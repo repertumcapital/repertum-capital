@@ -123,6 +123,26 @@ test("missing FX rate for a non-EUR trade is an error, missing currency column a
   assert.ok(r2.issues.some(i => i.level === "warning" && i.text.includes("Currency column")));
 });
 
+test("pence prices (GBX) use EUR per GBP and are divided by 100", () => {
+  const csv = [FX_HEADER, '01.02.2025,,MTE,UK Co,"600,00",Long,"10,00","500,00",,,"20,00%",,GBX,"1,20","1,10"'].join("\n");
+  const { trades, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(issues.length, 0, JSON.stringify(issues));
+  // cost 5.00 GBP × 1.20 × 10 = 60 EUR; value 6.00 × 1.10 × 10 = 66 EUR → +6 EUR, +10 %
+  near(trades[0].pnl, 6, 1e-9);
+  near(trades[0].returnPct, 10);
+  assert.equal(trades[0].currency, "GBX");
+});
+
+test("missing entry date keeps the trade in the totals with a warning; names lose line breaks", () => {
+  const csv = HEADER + ',Currency\n,,AAA,"Alpha\nFund","110,00",Long,"1,00","100,00",,,"10,00%",,EUR';
+  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(trades[0].valid, true);
+  assert.equal(trades[0].name, "Alpha Fund");
+  near(metrics.totalReturnPct, 1);
+  assert.equal(metrics.startDate, null);
+  assert.ok(issues.some(i => i.level === "warning" && i.text.includes("entry date missing")));
+});
+
 test("formatting uses 1,234.56 and 24 Nov 2026", () => {
   assert.equal(td.formatNumber(1234.567, 2), "1,234.57");
   assert.equal(td.formatPercent(25.1), "+25.10%");
