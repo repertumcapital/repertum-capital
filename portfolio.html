@@ -89,7 +89,7 @@
         <div class="section-header">
           <span class="section-label">Holdings</span>
           <h2 class="section-title">Open positions</h2>
-          <p class="section-desc">All positions that are currently open. Position sizes are not published.</p>
+          <p class="section-desc">All positions that are currently open. Prices are in the currency shown; returns are in EUR, including the currency effect for non-EUR positions. Position sizes are not published.</p>
         </div>
 
         <div class="table-wrapper">
@@ -98,11 +98,12 @@
               <tr>
                 <th>Ticker</th>
                 <th>Name</th>
+                <th>Currency</th>
                 <th>Side</th>
                 <th>Entry date</th>
                 <th class="right">Entry price</th>
                 <th class="right">Current price</th>
-                <th class="right">Return</th>
+                <th class="right">Return in EUR</th>
               </tr>
             </thead>
             <tbody id="portfolioTableBody"></tbody>
@@ -161,13 +162,14 @@
         <tr>
           <td><span class="ticker">${t.escapeHtml(tr.ticker || "—")}</span></td>
           <td>${t.escapeHtml(tr.name || "—")}</td>
+          <td>${t.escapeHtml(tr.currency)}</td>
           <td><span class="badge ${tr.side === "Short" ? "badge--red" : "badge--green"}">${tr.side}</span></td>
           <td>${t.formatDate(tr.entryDate)}</td>
           <td class="right">${t.formatNumber(tr.entryPrice)}</td>
           <td class="right">${t.formatNumber(tr.currentPrice)}</td>
           <td class="right ${t.signClass(tr.returnPct)}">${t.formatPercent(tr.returnPct)}</td>
         </tr>`).join("")
-        : `<tr><td colspan="7">No open positions.</td></tr>`;
+        : `<tr><td colspan="8">No open positions.</td></tr>`;
     });
   </script>
 </body>

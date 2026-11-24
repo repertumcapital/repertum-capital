@@ -104,7 +104,7 @@
         <div class="section-header">
           <span class="section-label">Trade journal</span>
           <h2 class="section-title">Trade log</h2>
-          <p class="section-desc">Every documented trade. Click a column header to sort. Return: long (price − entry) ÷ entry, short (entry − price) ÷ entry, using the exit price for closed and the current price for open trades.</p>
+          <p class="section-desc">Every documented trade. Click a column header to sort. Prices are in the currency shown. Return: long (price − entry) ÷ entry, short (entry − price) ÷ entry, using the exit price for closed and the current price for open trades. For non-EUR trades, the return is converted to EUR at the exchange rate on the entry date and on the exit date (or today), so it includes the currency effect.</p>
         </div>
 
         <div class="table-wrapper">
@@ -114,11 +114,12 @@
                 <th data-trade-sort="entryDate">Entry date<span class="sort-icon"></span></th>
                 <th data-trade-sort="exitDate">Exit date<span class="sort-icon"></span></th>
                 <th data-trade-sort="ticker">Ticker<span class="sort-icon"></span></th>
+                <th data-trade-sort="currency">Currency<span class="sort-icon"></span></th>
                 <th data-trade-sort="side">Side<span class="sort-icon"></span></th>
                 <th data-trade-sort="status">Status<span class="sort-icon"></span></th>
                 <th class="right" data-trade-sort="entryPrice">Entry price<span class="sort-icon"></span></th>
                 <th class="right" data-trade-sort="price">Current / exit price<span class="sort-icon"></span></th>
-                <th class="right" data-trade-sort="returnPct">Return<span class="sort-icon"></span></th>
+                <th class="right" data-trade-sort="returnPct">Return in EUR<span class="sort-icon"></span></th>
                 <th class="right" data-trade-sort="daysHeld">Days held<span class="sort-icon"></span></th>
               </tr>
             </thead>
@@ -203,11 +204,12 @@
           <td>${t.formatDate(tr.entryDate)}</td>
           <td>${t.formatDate(tr.exitDate)}</td>
           <td><span class="ticker">${t.escapeHtml(tr.ticker || "—")}</span></td>
+          <td>${t.escapeHtml(tr.currency)}</td>
           <td><span class="badge badge--navy">${tr.side}</span></td>
           <td><span class="badge ${tr.isClosed ? "badge--gray" : "badge--green"}">${tr.status}</span></td>
           <td class="right">${t.formatNumber(tr.entryPrice)}</td>
           <td class="right">${t.formatNumber(tr.price)}</td>
-          <td class="right ${t.signClass(tr.returnPct)}">${t.formatPercent(tr.returnPct)}</td>
+          <td class="right ${t.signClass(tr.returnPct)}"${tr.currency !== "EUR" && tr.valid ? ` title="${t.formatPercent(tr.localReturnPct)} in ${t.escapeHtml(tr.currency)}"` : ""}>${t.formatPercent(tr.returnPct)}</td>
           <td class="right">${Number.isFinite(tr.daysHeld) ? t.formatNumber(tr.daysHeld, 0) : t.NA}</td>
         </tr>`).join("");
         headers.forEach(h => {

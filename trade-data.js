@@ -35,8 +35,15 @@
     exitPrice: ["Exit Price"],
     sheetPnl: ["P&L €", "P&L"],
     sheetReturnPct: ["P&L %"],
-    sheetHoldingDays: ["Holding Period (Tage)", "Holding Period (Days)"]
+    sheetHoldingDays: ["Holding Period (Tage)", "Holding Period (Days)"],
+    // Currency of Entry/Exit/Current Price (e.g. EUR, USD). Optional column;
+    // without it every trade is treated as EUR and a warning is shown.
+    currency: ["Currency", "Währung"],
+    // EUR per 1 unit of the trade currency. Only needed for non-EUR trades.
+    fxEntry: ["FX Entry", "FX at Entry"],
+    fxNow: ["FX Exit/Current", "FX Current", "FX Exit"]
   };
+  const BASE_CURRENCY = "EUR";
   const REQUIRED_COLUMNS = ["entryDate", "exitDate", "ticker", "side", "shares", "entryPrice", "exitPrice", "currentPrice"];
 
   // A difference larger than this between the site's calculation and the
@@ -174,6 +181,7 @@
     const currentPrice = parseNumber(cell("currentPrice"));
 
     if (shares.error) problems.push(`Shares: ${shares.error}`);
+    else if (shares.value <= 0) problems.push("Shares must be above 0");
     if (entryPrice.error) problems.push(`Entry price: ${entryPrice.error}`);
     else if (entryPrice.value <= 0) problems.push("Entry price must be above 0");
 
@@ -181,14 +189,30 @@
     const price = isClosed ? exitPrice : currentPrice;
     if (price.error) problems.push(`${isClosed ? "Exit" : "Current"} price: ${price.error}`);
 
+    // Currency and FX rates (EUR per 1 unit of the trade currency).
+    const currency = col.currency >= 0 ? String(cell("currency")).trim().toUpperCase() || BASE_CURRENCY : BASE_CURRENCY;
+    let fxEntry = { value: 1, error: null };
+    let fxNow = { value: 1, error: null };
+    if (!/^[A-Z]{3}$/.test(currency)) problems.push(`Currency: "${cell("currency")}" is not a 3-letter code`);
+    else if (currency !== BASE_CURRENCY) {
+      fxEntry = col.fxEntry >= 0 ? parseNumber(cell("fxEntry")) : fail("", "column missing");
+      fxNow = col.fxNow >= 0 ? parseNumber(cell("fxNow")) : fail("", "column missing");
+      if (fxEntry.error) problems.push(`FX Entry (${currency}→EUR): ${fxEntry.error}`);
+      if (fxNow.error) problems.push(`FX Exit/Current (${currency}→EUR): ${fxNow.error}`);
+    }
+
     const valid = problems.length === 0;
 
-    // Return per trade (%):  long  (P − E) / E × 100,  short  (E − P) / E × 100
-    const returnPct = valid ? direction * (price.value - entryPrice.value) / entryPrice.value * 100 : NaN;
-    // P&L in currency (internal only, never displayed): direction × (P − E) × shares
-    const pnl = valid ? direction * (price.value - entryPrice.value) * shares.value : NaN;
-    // Cost basis (internal only, never displayed): E × shares
-    const cost = valid ? entryPrice.value * shares.value : NaN;
+    // Local return (%), in the trade's own currency:
+    //   long  (P − E) / E × 100,   short  (E − P) / E × 100
+    const localReturnPct = valid ? direction * (price.value - entryPrice.value) / entryPrice.value * 100 : NaN;
+    // Cost basis in EUR (internal only, never displayed): E × FXentry × shares
+    const cost = valid ? entryPrice.value * fxEntry.value * shares.value : NaN;
+    // P&L in EUR (internal only, never displayed):
+    //   long  (P × FXnow − E × FXentry) × shares,   short  (E × FXentry − P × FXnow) × shares
+    const pnl = valid ? direction * (price.value * fxNow.value - entryPrice.value * fxEntry.value) * shares.value : NaN;
+    // Return in EUR (%) = P&L in EUR ÷ cost in EUR × 100 (equals the local return for EUR trades)
+    const returnPct = valid ? pnl / cost * 100 : NaN;
 
     // Days held: exit − entry for closed trades, as-of date − entry for open ones.
     let daysHeld = NaN;
@@ -200,8 +224,8 @@
     // Cross-check with the sheet's own numbers (warnings, not errors).
     const warnings = [];
     const sheetReturn = parseNumber(cell("sheetReturnPct"));
-    if (valid && !sheetReturn.error && Math.abs(sheetReturn.value - returnPct) > RETURN_TOLERANCE_PCT) {
-      warnings.push(`return ${formatPercent(returnPct)} on the site vs ${formatPercent(sheetReturn.value)} in the sheet`);
+    if (valid && !sheetReturn.error && Math.abs(sheetReturn.value - localReturnPct) > RETURN_TOLERANCE_PCT) {
+      warnings.push(`return ${formatPercent(localReturnPct)} on the site vs ${formatPercent(sheetReturn.value)} in the sheet`);
     }
     const sheetDays = parseNumber(cell("sheetHoldingDays"));
     if (isClosed && Number.isFinite(daysHeld) && !sheetDays.error && sheetDays.value !== daysHeld) {
@@ -222,7 +246,9 @@
       exitPrice: exitPrice.value,
       currentPrice: currentPrice.value,
       price: price.value,           // exit price (closed) or current price (open)
-      returnPct,
+      currency,
+      localReturnPct,               // in the trade's currency
+      returnPct,                    // in EUR, incl. currency effect
       pnl,
       cost,
       daysHeld,
@@ -311,6 +337,9 @@
     trades.filter(t => !t.valid).forEach(t => {
       issues.push({ level: "error", text: `${t.label}: ${t.problems.join("; ")}. Excluded from all totals.` });
     });
+    if (col.currency === -1) {
+      issues.push({ level: "warning", text: "The sheet has no Currency column, so all prices are treated as EUR." });
+    }
     trades.filter(t => t.warnings.length).forEach(t => {
       issues.push({ level: "warning", text: `${t.label}: ${t.warnings.join("; ")}.` });
     });

@@ -53,7 +53,7 @@ test("metrics follow the documented formulas", () => {
   near(metrics.winRatePct, 50);                                 // 1 of 2 closed
   near(metrics.avgHoldingDays, (30 + 59) / 2);
   assert.equal(metrics.startDate.toISOString(), "2025-01-01T00:00:00.000Z"); // date order, not text order
-  assert.equal(issues.length, 0, JSON.stringify(issues));
+  assert.equal(issues.filter(i => !i.text.includes("Currency column")).length, 0, JSON.stringify(issues));
 });
 
 test("error cells are excluded visibly, not counted as 0", () => {
@@ -80,6 +80,47 @@ test("missing columns stop the calculation", () => {
   const { trades, issues } = td.processCsv("Ticker,Name\nAAA,Alpha", AS_OF);
   assert.equal(trades.length, 0);
   assert.equal(issues[0].level, "error");
+});
+
+const FX_HEADER = HEADER + ',Currency,FX Entry,FX Exit/Current';
+
+test("USD trades are converted with the entry-date and current/exit FX rates", () => {
+  const csv = [
+    FX_HEADER,
+    // long USD: 100 → 110 (+10 % local); FX 0,90 → 0,80 EUR per USD
+    '01.02.2025,,EMX,EM ETF,"110,00",Long,"10,00","100,00",,,"10,00%",,USD,"0,90","0,80"',
+    // short USD, closed: 50 → 40 (+20 % local); FX 0,90 → 1,00
+    '01.03.2025,01.04.2025,SHRT,Short Co,-,Short,"10,00","50,00","40,00",,"20,00%",31,USD,"0,90","1,00"',
+    // EUR trade without FX values
+    '01.01.2025,,EUR1,Euro Co,"105,00",Long,"10,00","100,00",,,"5,00%",,EUR,,'
+  ].join("\n");
+  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(issues.length, 0, JSON.stringify(issues));
+
+  // long: cost 100×0.9×10 = 900; value 110×0.8×10 = 880 → pnl −20, −2.22 % in EUR
+  near(trades[0].localReturnPct, 10);
+  near(trades[0].pnl, -20, 1e-9);
+  near(trades[0].returnPct, -20 / 900 * 100);
+  // short: cost 50×0.9×10 = 450; pnl = (450 − 40×1.0×10) = +50 → +11.11 % in EUR
+  near(trades[1].localReturnPct, 20);
+  near(trades[1].pnl, 50, 1e-9);
+  near(trades[1].returnPct, 50 / 450 * 100);
+  // EUR trade unchanged
+  near(trades[2].returnPct, 5);
+
+  near(metrics.totalReturnPct, (-20 + 50 + 50) / 1000 * 100);
+  near(metrics.winRatePct, 100); // the closed short gained in EUR
+  assert.equal(trades[0].currency, "USD");
+});
+
+test("missing FX rate for a non-EUR trade is an error, missing currency column a warning", () => {
+  const csv = [FX_HEADER, '01.02.2025,,EMX,EM ETF,"110,00",Long,"10,00","100,00",,,"10,00%",,USD,#N/A,"0,80"'].join("\n");
+  const r = td.processCsv(csv, AS_OF);
+  assert.equal(r.trades[0].valid, false);
+  assert.ok(r.issues.some(i => i.level === "error" && i.text.includes("FX Entry")));
+
+  const r2 = td.processCsv([HEADER, '10.03.2025,,AAA,Alpha,"120,00",Long,"1,00","100,00",,,"20,00%",'].join("\n"), AS_OF);
+  assert.ok(r2.issues.some(i => i.level === "warning" && i.text.includes("Currency column")));
 });
 
 test("formatting uses 1,234.56 and 24 Nov 2026", () => {
