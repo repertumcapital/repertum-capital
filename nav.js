@@ -5,11 +5,11 @@
   /* ─── THEME TOGGLE ─────────────────────────────────────── */
   const html = document.documentElement;
 
-  // 1) gespeichertes Theme lesen oder System-Standard verwenden
+  // 1) read the saved theme or fall back to the system setting
   const savedTheme = localStorage.getItem('rc-theme');
   let theme = savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
-  // 2) auf <html> setzen
+  // 2) apply it to <html>
   html.setAttribute('data-theme', theme);
 
     function updateToggle(btn) {
