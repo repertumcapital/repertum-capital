@@ -71,14 +71,14 @@
             <p class="kpi-card__value" id="portfolioPositionCount" data-metric>…</p>
           </div>
           <div class="kpi-card">
-            <p class="kpi-card__label">Return on open positions</p>
-            <p class="kpi-card__value" id="portfolioOpenReturn" data-metric>…</p>
-            <p class="kpi-card__note">Unrealized, relative to their cost</p>
+            <p class="kpi-card__label">Time-weighted return since inception</p>
+            <p class="kpi-card__value" id="portfolioTwr" data-metric>…</p>
+            <p class="kpi-card__note">As of <span data-performance-as-of>…</span></p>
           </div>
           <div class="kpi-card">
-            <p class="kpi-card__label">Total return since start</p>
-            <p class="kpi-card__value" id="portfolioTotalReturn" data-metric>…</p>
-            <p class="kpi-card__note">All trades ÷ start capital</p>
+            <p class="kpi-card__label" id="portfolioBenchmarkLabel">Benchmark, same period</p>
+            <p class="kpi-card__value" id="portfolioBenchmark" data-metric>…</p>
+            <p class="kpi-card__note">Since <span data-inception-date>…</span></p>
           </div>
         </div>
       </div>
@@ -150,11 +150,12 @@
   <script src="trade-data.js"></script>
   <script src="nav.js"></script>
   <script>
-    tradeData.initTradeData(({ trades, metrics: m }) => {
+    tradeData.initTradeData(({ trades, metrics: m, performance: p }) => {
       const t = tradeData;
       t.setValue("portfolioPositionCount", String(m.openCount));
-      t.setValue("portfolioOpenReturn", t.formatPercent(m.openReturnPct), m.openReturnPct);
-      t.setValue("portfolioTotalReturn", t.formatPercent(m.totalReturnPct), m.totalReturnPct);
+      t.setValue("portfolioTwr", t.formatPercent(p.twrSinceInception), p.twrSinceInception);
+      t.setValue("portfolioBenchmarkLabel", `${p.benchmarkName || "Benchmark"}, same period`);
+      t.setValue("portfolioBenchmark", t.formatPercent(p.benchmarkSinceInception), p.benchmarkSinceInception);
 
       const open = trades.filter(tr => !tr.isClosed);
       document.getElementById("portfolioTableBody").innerHTML = open.length

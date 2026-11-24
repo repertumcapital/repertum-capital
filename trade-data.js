@@ -2,12 +2,14 @@
  * trade-data.js – the ONE data module of the site.
  *
  * Responsibilities (nothing else on the site may do these):
- *   1. Fetch the published Google Sheet CSV (once per browser session, see CACHE).
+ *   1. Fetch the two published Google Sheet CSVs – the trade log and the
+ *      "Public" performance tab – once per browser session (see CACHE).
  *   2. Parse it explicitly (German number and date formats, error cells).
  *   3. Calculate every metric. Formulas are documented in data/README.md.
  *   4. Format numbers, percentages and dates for display.
  *
- * Pages only read `trades`, `metrics` and `issues` and put them into the DOM.
+ * Pages only read `trades`, `metrics`, `performance` and `issues` and put
+ * them into the DOM. No money amounts or position sizes are used anywhere.
  */
 (function (root) {
   "use strict";
@@ -15,10 +17,11 @@
   /* ─── CONFIG ──────────────────────────────────────────────────────────── */
 
   const config = root.SITE_DATA_CONFIG || {};
-  const csvUrl = config.googleSheet && config.googleSheet.csvUrl;
-  const portfolioConfig = config.portfolio || {};
+  const sheetConfig = config.googleSheet || {};
+  const tradesCsvUrl = sheetConfig.tradesCsvUrl || sheetConfig.csvUrl;
+  const publicCsvUrl = sheetConfig.publicCsvUrl;
 
-  const CACHE_KEY = "rc-trade-snapshot-v2";
+  const CACHE_KEY = "rc-trade-snapshot-v3";
   const CACHE_TTL_MS = ((config.googleSheet && config.googleSheet.cacheMinutes) || 10) * 60 * 1000;
 
   // Sheet header → internal field. Columns are found by header name, so
@@ -30,10 +33,8 @@
     name: ["Name"],
     currentPrice: ["Current Price", "Aktueller Kurs"],
     side: ["Side (Long/Short)", "Side"],
-    shares: ["Stück", "Shares"],
     entryPrice: ["Entry Price"],
     exitPrice: ["Exit Price"],
-    sheetPnl: ["P&L €", "P&L"],
     sheetReturnPct: ["P&L %"],
     sheetHoldingDays: ["Holding Period (Tage)", "Holding Period (Days)"],
     // Currency of Entry/Exit/Current Price (e.g. EUR, USD). Optional column;
@@ -44,7 +45,19 @@
     fxNow: ["FX Exit/Current", "FX Current", "FX Exit"]
   };
   const BASE_CURRENCY = "EUR";
-  const REQUIRED_COLUMNS = ["entryDate", "exitDate", "ticker", "side", "shares", "entryPrice", "exitPrice", "currentPrice"];
+  const REQUIRED_COLUMNS = ["entryDate", "exitDate", "ticker", "side", "entryPrice", "exitPrice", "currentPrice"];
+
+  // "Public" tab: column A = label, column B = value. Labels are matched
+  // case-insensitively; other rows (e.g. notes) are ignored.
+  const PUBLIC_FIELDS = {
+    inceptionDate: { label: "Inception date", type: "date" },
+    asOf: { label: "As of", type: "date" },
+    twrSinceInception: { label: "Time-weighted return since inception", type: "percent" },
+    twrYtd: { label: "Time-weighted return year-to-date", type: "percent" },
+    benchmarkName: { label: "Benchmark", type: "text" },
+    benchmarkSinceInception: { label: "Benchmark return since inception", type: "percent" },
+    benchmarkYtd: { label: "Benchmark return year-to-date", type: "percent" }
+  };
 
   // A difference larger than this between the site's calculation and the
   // sheet's own P&L % column is reported as a data issue.
@@ -169,7 +182,7 @@
     // the totals; only its days held and the start date are affected.
     const dataWarnings = [];
     if (entryDate.error) problems.push(`Entry date: ${entryDate.error}`);
-    else if (!entryDate.value) dataWarnings.push("entry date missing, so days held and the start date leave this trade out");
+    else if (!entryDate.value) dataWarnings.push("entry date missing, so it is left out of days held");
     if (exitDate.error) problems.push(`Exit date: ${exitDate.error}`);
 
     const sideRaw = String(cell("side")).trim().toLowerCase();
@@ -179,13 +192,10 @@
 
     const isClosed = String(cell("exitDate")).trim() !== "";
 
-    const shares = parseNumber(cell("shares"));
     const entryPrice = parseNumber(cell("entryPrice"));
     const exitPrice = parseNumber(cell("exitPrice"));
     const currentPrice = parseNumber(cell("currentPrice"));
 
-    if (shares.error) problems.push(`Shares: ${shares.error}`);
-    else if (shares.value <= 0) problems.push("Shares must be above 0");
     if (entryPrice.error) problems.push(`Entry price: ${entryPrice.error}`);
     else if (entryPrice.value <= 0) problems.push("Entry price must be above 0");
 
@@ -216,14 +226,13 @@
     // Local return (%), in the trade's own currency:
     //   long  (P − E) / E × 100,   short  (E − P) / E × 100
     const localReturnPct = valid ? direction * (price.value - entryPrice.value) / entryPrice.value * 100 : NaN;
-    // Cost basis in EUR (internal only, never displayed): E × FXentry × shares
-    // (× 0.01 for prices in pence)
-    const cost = valid ? entryPrice.value * unit * fxEntry.value * shares.value : NaN;
-    // P&L in EUR (internal only, never displayed):
-    //   long  (P × FXnow − E × FXentry) × shares,   short  (E × FXentry − P × FXnow) × shares
-    const pnl = valid ? direction * (price.value * fxNow.value - entryPrice.value * fxEntry.value) * unit * shares.value : NaN;
-    // Return in EUR (%) = P&L in EUR ÷ cost in EUR × 100 (equals the local return for EUR trades)
-    const returnPct = valid ? pnl / cost * 100 : NaN;
+    // Return in EUR (%), per unit, incl. the currency effect:
+    //   long  (P × FXnow − E × FXentry) / (E × FXentry) × 100
+    //   short (E × FXentry − P × FXnow) / (E × FXentry) × 100
+    // (For pence prices the 1/100 factor cancels out; for EUR trades both FX are 1.)
+    const entryEur = valid ? entryPrice.value * unit * fxEntry.value : NaN;
+    const priceEur = valid ? price.value * unit * fxNow.value : NaN;
+    const returnPct = valid ? direction * (priceEur - entryEur) / entryEur * 100 : NaN;
 
     // Days held: exit − entry for closed trades, as-of date − entry for open ones.
     let daysHeld = NaN;
@@ -260,8 +269,6 @@
       currency,
       localReturnPct,               // in the trade's currency
       returnPct,                    // in EUR, incl. currency effect
-      pnl,
-      cost,
       daysHeld,
       valid,
       problems,
@@ -270,43 +277,29 @@
   }
 
   function calculateMetrics(trades, asOf) {
-    const startCapital = Number(portfolioConfig.startCapital);
     const valid = trades.filter(t => t.valid);
     const open = trades.filter(t => !t.isClosed);
     const closed = trades.filter(t => t.isClosed);
-    const validOpen = valid.filter(t => !t.isClosed);
     const validClosed = valid.filter(t => t.isClosed);
     const excluded = trades.filter(t => !t.valid);
-
-    const sum = (list, fn) => list.reduce((acc, t) => acc + fn(t), 0);
     const mean = list => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : NaN);
 
-    // Total return since start (%) = Σ P&L of all valid trades ÷ start capital × 100
-    const totalPnl = sum(valid, t => t.pnl);
-    const totalReturnPct = startCapital > 0 && valid.length ? totalPnl / startCapital * 100 : NaN;
-
-    // Return on open positions (%) = Σ P&L open ÷ Σ (entry × shares) open × 100
-    const openCost = sum(validOpen, t => t.cost);
-    const openReturnPct = openCost > 0 ? sum(validOpen, t => t.pnl) / openCost * 100 : NaN;
-
-    // Win rate (%) = closed trades with return > 0 ÷ all valid closed trades × 100
+    // Win rate (%) = closed trades with return in EUR > 0 ÷ all valid closed trades × 100
     const closedWinners = validClosed.filter(t => t.returnPct > 0).length;
     const winRatePct = validClosed.length ? closedWinners / validClosed.length * 100 : NaN;
 
     // Average holding period (days) = mean of (exit − entry) over closed trades
     const avgHoldingDays = mean(closed.filter(t => Number.isFinite(t.daysHeld)).map(t => t.daysHeld));
 
-    // Start date = earliest entry date (compared as dates, not text)
+    // First trade = earliest entry date (compared as dates, not text)
     const entryDates = trades.map(t => t.entryDate).filter(Boolean).sort((a, b) => a - b);
-    const startDate = entryDates[0] || null;
+    const firstTradeDate = entryDates[0] || null;
 
     const byReturn = [...valid].sort((a, b) => b.returnPct - a.returnPct);
 
     return {
       asOf,
-      startDate,
-      totalReturnPct,
-      openReturnPct,
+      firstTradeDate,
       winRatePct,
       closedWinners,
       avgHoldingDays,
@@ -316,11 +309,7 @@
       validClosedCount: validClosed.length,
       excludedCount: excluded.length,
       bestTrade: byReturn[0] || null,
-      worstTrade: byReturn[byReturn.length - 1] || null,
-      // Benchmark is filled in by loadTradeData (null = unavailable).
-      benchmarkReturnPct: null,
-      // Difference vs benchmark (pp) = total return − benchmark return
-      differencePct: null
+      worstTrade: byReturn[byReturn.length - 1] || null
     };
   }
 
@@ -346,7 +335,7 @@
     const trades = rows.slice(1).map((cols, i) => buildTrade(cols, col, i + 2, asOf));
 
     trades.filter(t => !t.valid).forEach(t => {
-      issues.push({ level: "error", text: `${t.label}: ${t.problems.join("; ")}. Excluded from all totals.` });
+      issues.push({ level: "error", text: `${t.label}: ${t.problems.join("; ")}. Excluded from the trade statistics.` });
     });
     if (col.currency === -1) {
       issues.push({ level: "warning", text: "The sheet has no Currency column, so all prices are treated as EUR." });
@@ -354,76 +343,86 @@
     trades.filter(t => t.warnings.length).forEach(t => {
       issues.push({ level: "warning", text: `${t.label}: ${t.warnings.join("; ")}.` });
     });
-    if (!(Number(portfolioConfig.startCapital) > 0)) {
-      issues.push({ level: "error", text: "Start capital is missing in data-config.js, so total return cannot be calculated." });
-    }
 
     return { trades, metrics: calculateMetrics(trades, asOf), issues };
   }
 
-  /* ─── BENCHMARK (MSCI World, best effort) ─────────────────────────────── */
+  /* ─── PERFORMANCE ("Public" tab) ─────────────────────────────────────── */
+  // The time-weighted return and the benchmark are calculated in the sheet
+  // (it has the deposits and account values, which never reach the site).
+  // The site only reads them, checks them and annualizes periods ≥ 1 year.
 
-  function extractReturnFromYahooJson(json, startDate) {
-    const result = json && json.chart && json.chart.result && json.chart.result[0];
-    if (!result) return null;
-    const timestamps = result.timestamp;
-    const closes = result.indicators && result.indicators.quote && result.indicators.quote[0] && result.indicators.quote[0].close;
-    if (!timestamps || !closes || !timestamps.length || !startDate) return null;
-
-    const startSec = startDate.getTime() / 1000;
-    let startPrice = null;
-    for (let i = 0; i < timestamps.length; i++) {
-      if (timestamps[i] >= startSec && closes[i] != null) { startPrice = closes[i]; break; }
-    }
-    // No fallback to "first available price": if the history does not reach
-    // back to the start date, the benchmark is reported as unavailable.
-    if (timestamps[0] > startSec + 7 * 86400) return null;
-
-    let lastPrice = null;
-    for (let i = closes.length - 1; i >= 0; i--) {
-      if (closes[i] != null) { lastPrice = closes[i]; break; }
-    }
-    if (!startPrice || !lastPrice) return null;
-    // Benchmark return (%) = (last close − close on/after start date) ÷ that close × 100
-    return (lastPrice - startPrice) / startPrice * 100;
+  function parsePercent(raw) {
+    const s = String(raw === undefined || raw === null ? "" : raw).trim();
+    const n = parseNumber(s);
+    if (n.error) return n;
+    // A plain fraction like 0,2735 would be off by a factor of 100.
+    if (!s.includes("%")) return fail(raw, "not formatted as a percentage (% sign missing)");
+    return n;
   }
 
-  async function fetchBenchmarkReturn(startDate) {
-    if (!startDate) return null;
-    const ticker = portfolioConfig.benchmarkTicker || "EUNL.DE";
-    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=5y`;
-    const proxies = [
-      async () => {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return JSON.parse((await res.json()).contents);
-      },
-      async () => {
-        const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
+  /**
+   * Annualized return (%) = ((1 + r) ^ (365.25 / days) − 1) × 100,
+   * only for periods of at least 365 days; shorter periods return NaN.
+   */
+  function annualize(cumulativePct, days) {
+    if (!Number.isFinite(cumulativePct) || !Number.isFinite(days) || days < 365) return NaN;
+    return (Math.pow(1 + cumulativePct / 100, 365.25 / days) - 1) * 100;
+  }
+
+  /** Pure function: Public-tab CSV text → { performance, issues }. */
+  function processPublicCsv(text) {
+    const issues = [];
+    const values = {};
+    csvToRows(text || "").forEach(row => {
+      const label = String(row[0] || "").trim().toLowerCase();
+      const key = Object.keys(PUBLIC_FIELDS).find(k => PUBLIC_FIELDS[k].label.toLowerCase() === label);
+      if (key) values[key] = row[1];
+    });
+
+    const perf = {};
+    Object.keys(PUBLIC_FIELDS).forEach(key => {
+      const field = PUBLIC_FIELDS[key];
+      const raw = values[key];
+      if (raw === undefined) {
+        perf[key] = field.type === "text" ? "" : field.type === "date" ? null : NaN;
+        issues.push({ level: "error", text: `Performance tab: row "${field.label}" is missing.` });
+        return;
       }
-    ];
-    for (const load of proxies) {
-      try {
-        const value = extractReturnFromYahooJson(await load(), startDate);
-        if (value !== null && Number.isFinite(value)) return value;
-      } catch (e) {
-        console.warn("[trade-data] benchmark source failed:", e.message);
+      let parsed;
+      if (field.type === "date") {
+        parsed = parseDate(raw);
+        if (!parsed.error && !parsed.value) parsed = { value: null, error: "empty" };
+      } else if (field.type === "percent") {
+        parsed = parsePercent(raw);
+      } else {
+        parsed = { value: String(raw).trim(), error: null };
       }
-    }
-    return null;
+      perf[key] = parsed.value;
+      if (parsed.error) issues.push({ level: "error", text: `Performance tab: "${field.label}": ${parsed.error}. Shown as n/a.` });
+    });
+
+    // Length of the measured period (days) = as-of date − inception date
+    perf.periodDays = perf.inceptionDate && perf.asOf ? daysBetween(perf.inceptionDate, perf.asOf) : NaN;
+    perf.isAtLeastOneYear = perf.periodDays >= 365;
+    perf.twrAnnualized = annualize(perf.twrSinceInception, perf.periodDays);
+    perf.benchmarkAnnualized = annualize(perf.benchmarkSinceInception, perf.periodDays);
+    // Difference vs benchmark (percentage points), same period
+    perf.differenceSinceInception = perf.twrSinceInception - perf.benchmarkSinceInception;
+    perf.differenceYtd = perf.twrYtd - perf.benchmarkYtd;
+
+    return { performance: perf, issues };
   }
 
   /* ─── LOADING + CACHE ─────────────────────────────────────────────────── */
-  // One snapshot { fetchedAt, csv, benchmark } per browser session, shared by
-  // all pages for CACHE_TTL_MS. Without this, every page fetched the CSV on
-  // its own and Google's publish cache could serve each page a different version.
+  // One snapshot { fetchedAt, tradesCsv, publicCsv } per browser session,
+  // shared by all pages for CACHE_TTL_MS. Without this, every page fetched
+  // on its own and Google's publish cache could serve different versions.
 
   function readCache() {
     try {
       const snap = JSON.parse(root.sessionStorage.getItem(CACHE_KEY));
-      if (snap && typeof snap.csv === "string" && Date.now() - snap.fetchedAt < CACHE_TTL_MS) return snap;
+      if (snap && Date.now() - snap.fetchedAt < CACHE_TTL_MS) return snap;
     } catch (e) { /* storage blocked or empty */ }
     return null;
   }
@@ -432,23 +431,34 @@
     try { root.sessionStorage.setItem(CACHE_KEY, JSON.stringify(snap)); } catch (e) { /* ignore */ }
   }
 
-  let loadPromise = null;
+  async function fetchCsv(url, what) {
+    if (!url) throw new Error(`The ${what} CSV link is missing in data-config.js.`);
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Google Sheets answered HTTP ${response.status} for the ${what}.`);
+    const text = await response.text();
+    if (/^\s*</.test(text)) throw new Error(`Google Sheets returned a web page instead of CSV for the ${what}. Is the tab still published?`);
+    return text;
+  }
 
   async function fetchSnapshot() {
     const cached = readCache();
     if (cached) return cached;
-
-    if (!csvUrl) throw new Error("Google Sheet CSV URL is missing in data-config.js.");
-    const response = await fetch(csvUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Google Sheets answered HTTP ${response.status}.`);
-    const csv = await response.text();
-    if (/^\s*</.test(csv)) throw new Error("Google Sheets returned a web page instead of CSV. Is the sheet still published?");
-
-    const fetchedAt = Date.now();
-    const { metrics } = processCsv(csv, todayUtc(fetchedAt));
-    const benchmark = await fetchBenchmarkReturn(metrics.startDate);
-    const snap = { fetchedAt, csv, benchmark };
-    writeCache(snap);
+    const [trades, perf] = await Promise.allSettled([
+      fetchCsv(tradesCsvUrl, "trade log"),
+      fetchCsv(publicCsvUrl, "performance tab")
+    ]);
+    const snap = {
+      fetchedAt: Date.now(),
+      tradesCsv: trades.status === "fulfilled" ? trades.value : null,
+      tradesError: trades.status === "rejected" ? trades.reason.message : null,
+      publicCsv: perf.status === "fulfilled" ? perf.value : null,
+      publicError: perf.status === "rejected" ? perf.reason.message : null
+    };
+    if (snap.tradesCsv === null && snap.publicCsv === null) {
+      throw new Error(`${snap.tradesError} ${snap.publicError}`);
+    }
+    // Only cache complete snapshots, so a temporary error is retried on the next page.
+    if (!snap.tradesError && !snap.publicError) writeCache(snap);
     return snap;
   }
 
@@ -457,19 +467,24 @@
     return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   }
 
+  let loadPromise = null;
+
   function loadTradeData() {
     if (!loadPromise) {
       loadPromise = fetchSnapshot().then(snap => {
-        const result = processCsv(snap.csv, todayUtc(snap.fetchedAt));
-        result.fetchedAt = new Date(snap.fetchedAt);
-        if (snap.benchmark !== null && Number.isFinite(snap.benchmark)) {
-          result.metrics.benchmarkReturnPct = snap.benchmark;
-          if (Number.isFinite(result.metrics.totalReturnPct)) {
-            result.metrics.differencePct = result.metrics.totalReturnPct - snap.benchmark;
-          }
+        const asOf = todayUtc(snap.fetchedAt);
+        const result = snap.tradesCsv !== null
+          ? processCsv(snap.tradesCsv, asOf)
+          : { trades: [], metrics: calculateMetrics([], asOf), issues: [{ level: "error", text: `Trade log could not be loaded: ${snap.tradesError}` }] };
+        if (snap.publicCsv !== null) {
+          const perf = processPublicCsv(snap.publicCsv);
+          result.performance = perf.performance;
+          result.issues = perf.issues.concat(result.issues);
         } else {
-          result.issues.push({ level: "warning", text: "MSCI World benchmark could not be loaded right now and is shown as n/a." });
+          result.performance = processPublicCsv("").performance;
+          result.issues.unshift({ level: "error", text: `Performance figures could not be loaded: ${snap.publicError}` });
         }
+        result.fetchedAt = new Date(snap.fetchedAt);
         return result;
       });
     }
@@ -533,6 +548,12 @@
     doc.querySelectorAll("[data-as-of]").forEach(el => {
       el.textContent = result ? formatDateTime(result.fetchedAt) : "not available";
     });
+    doc.querySelectorAll("[data-performance-as-of]").forEach(el => {
+      el.textContent = result && result.performance && result.performance.asOf ? formatDate(result.performance.asOf) : NA;
+    });
+    doc.querySelectorAll("[data-inception-date]").forEach(el => {
+      el.textContent = result && result.performance && result.performance.inceptionDate ? formatDate(result.performance.inceptionDate) : NA;
+    });
     doc.querySelectorAll("[data-data-status]").forEach(box => {
       const items = error
         ? [{ level: "error", text: `Trade data could not be loaded: ${error.message} No numbers are shown.` }]
@@ -562,6 +583,8 @@
     loadTradeData,
     initTradeData,
     processCsv,
+    processPublicCsv,
+    annualize,
     // parsing (exported for tests)
     parseNumber,
     parseDate,

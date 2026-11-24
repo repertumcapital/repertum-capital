@@ -50,46 +50,63 @@ Wording rules: no "buy now", "strong buy", price targets presented as advice, or
 
 # Trade data and metrics
 
-All trade numbers come from the published Google Sheet (`data-config.js` → `csvUrl`).
+The site reads two published tabs of the Google Sheet (links in `data-config.js`):
+
+- **Trade log** (`tradesCsvUrl`): one row per trade.
+- **Public** (`publicCsvUrl`): the time-weighted return and the benchmark, as percentages only.
+
 `trade-data.js` is the only file that fetches, parses and calculates them. Pages only display the results.
+No money amounts or position sizes are read, stored or shown; this repository is public.
 
 ## Loading and caching
 
-- The CSV is downloaded once and reused by every page for 10 minutes (`cacheMinutes`, stored in the browser's session storage). All pages of a visit therefore show the same version.
-- "As of" on each page is the time this version was downloaded. Google Finance prices inside the sheet can be delayed by up to 20 minutes, and Google can take a few minutes to update the published CSV after a change.
+- Both CSVs are downloaded once and reused by every page for 10 minutes (`cacheMinutes`, session storage), so all pages of a visit show the same version.
+- "Trade data as of" is the download time. "Performance as of" is the `As of` date in the Public tab.
+- Google Finance prices can be delayed by up to 20 minutes, and Google can take a few minutes to update a published CSV.
 
-## Parsing
+## Public tab
 
-- Columns are found by their header name (`Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Stück`, `Entry Price`, `Exit Price`, `P&L %`, `Holding Period (Tage)`, `Currency`, `FX Entry`, `FX Exit/Current`), so the column order can change.
-- `Currency` is the currency of Entry, Exit and Current Price (`EUR`, `USD`, …). Without this column every trade is treated as EUR and the page shows a warning.
-- `FX Entry` and `FX Exit/Current` are EUR per 1 unit of the trade currency, on the entry date and on the exit date (closed) or today (open). They are only needed for non-EUR trades; if one is missing the trade is excluded and listed as an error.
-- `GBX` (or `GBp`) means prices in pence: the FX columns are then EUR per 1 GBP (`GOOGLEFINANCE("CURRENCY:GBPEUR")`) and the site divides the prices by 100.
-- A missing entry date does not remove the trade from the totals; it only leaves out its days held and the start date, and a warning is shown.
-- Numbers must be in German format: `1.234,56`, `952,89`, `25,10%`. English formats like `1,234.56` are rejected instead of guessed.
-- Dates must be `24.11.2026` (or ISO `2026-11-24`). An empty exit date means the trade is open.
-- `#N/A`, `#REF!`, `#VALUE!`, empty cells, `-` and "Loading..." are errors, never 0. A trade with an error in a cell it needs is shown with "n/a", excluded from all totals, and listed in a visible notice on the page.
-- The sheet's own `P&L %` is compared with the local return, and `Holding Period` with the calculated days; both are only used as a cross-check. A difference of more than 0.05 percentage points (or any day difference) is shown as a warning.
+Two columns, `Metric` | `Value`. Labels are matched case-insensitively; other rows (notes) are ignored.
+
+| Label | Value |
+|---|---|
+| `Inception date` | date, `21.01.2025` |
+| `As of` | date the returns run to |
+| `Time-weighted return since inception` | cumulative, formatted with `%` |
+| `Time-weighted return year-to-date` | cumulative, with `%` |
+| `Benchmark` | text, e.g. `MSCI World (EUNL)` |
+| `Benchmark return since inception` | same period as the TWR, with `%` |
+| `Benchmark return year-to-date` | with `%` |
+
+A percentage without `%` (e.g. `0,2735`), an error cell or a missing row is shown as an error and the value as "n/a".
+
+## Trade log columns
+
+Columns are found by header name, so the order can change: `Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Entry Price`, `Exit Price`, `Currency`, `FX Entry`, `FX Exit/Current`; optional cross-checks `P&L %` and `Holding Period (Tage)`. Share counts and € P&L are not needed and should not be in the published tab.
+
+- Numbers in German format (`1.234,56`, `25,10%`); English formats are rejected, not guessed. Dates `24.11.2026` (or ISO). Empty exit date = open trade.
+- `#N/A`, `#REF!`, empty cells, `-` and "Loading..." are errors, never 0. A trade with an error in a cell it needs shows "n/a", is excluded from the trade statistics and is listed in a notice on the page.
+- A missing entry date only produces a warning; the trade is left out of days held.
+- `Currency` = currency of Entry, Exit and Current Price. Without the column every trade counts as EUR (with a warning).
+- `FX Entry` / `FX Exit/Current` = EUR per 1 unit of the trade currency, on the entry date and on the exit date (closed) or today (open). Only needed for non-EUR trades.
+- `GBX`/`GBp` = prices in pence; FX columns are then EUR per 1 GBP.
+- The sheet's `P&L %` is compared with the local return and `Holding Period` with the calculated days; differences are shown as warnings.
 
 ## Formulas
 
-| Metric | Formula |
-|---|---|
-| Price *P* of a trade | exit price if closed, current price if open |
-| Local return (trade currency, cross-check only) | long: (*P* − entry) ÷ entry × 100 · short: (entry − *P*) ÷ entry × 100 |
-| Cost per trade in EUR (internal, never shown) | entry × FX entry × shares |
-| P&L per trade in EUR (internal, never shown) | long: (*P* × FX now − entry × FX entry) × shares · short: (entry × FX entry − *P* × FX now) × shares |
-| Return per trade (shown) | P&L in EUR ÷ cost in EUR × 100. Same as the local return for EUR trades; includes the currency effect otherwise |
-| Total return since start | Σ P&L in EUR of all valid trades ÷ start capital (`data-config.js`) × 100 |
-| Return on open positions | Σ P&L in EUR of open trades ÷ Σ cost in EUR of open trades × 100 |
-| Win rate | closed trades with return in EUR > 0 ÷ all valid closed trades × 100 (shorts count as wins when the price fell) |
-| Days held | exit date − entry date (open trades: download date − entry date) |
-| Average holding period | mean of days held over closed trades |
-| Start date | earliest entry date |
-| Benchmark return | (last close − first close on/after start date) ÷ that close × 100, MSCI World ETF `EUNL.DE` |
-| Difference vs benchmark | total return − benchmark return, in percentage points |
-
-If the benchmark cannot be loaded it is shown as "n/a", never as 0%.
+| Metric | Formula | Where |
+|---|---|---|
+| Time-weighted return (since inception, YTD) | chain-linked monthly returns, see the Performance tab | sheet |
+| Benchmark return | same period as the TWR | sheet |
+| Annualized return | ((1 + r) ^ (365.25 ÷ days) − 1) × 100, only if inception → as-of ≥ 365 days; otherwise not shown | site |
+| Difference vs benchmark | TWR − benchmark, in percentage points | site |
+| Price *P* of a trade | exit price if closed, current price if open | site |
+| Local return (cross-check) | long (*P* − E) ÷ E × 100 · short (E − *P*) ÷ E × 100 | site |
+| Return per trade (shown) | long (*P* × FX now − E × FX entry) ÷ (E × FX entry) × 100 · short (E × FX entry − *P* × FX now) ÷ (E × FX entry) × 100 | site |
+| Win rate | closed trades with return > 0 ÷ all valid closed trades × 100 (shorts win when the price fell) | site |
+| Days held | exit − entry (open trades: download date − entry) | site |
+| Average holding period | mean days held over closed trades | site |
 
 ## Tests
 
-`node --test tests/trade-data.test.js` checks parsing, error handling and every formula with made-up trades.
+`node --test tests/trade-data.test.js` checks parsing, error handling and every site-side formula with made-up data.
