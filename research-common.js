@@ -27,9 +27,14 @@ function escapeHtml(value) {
 }
 
 function formatPostDate(dateString) {
-  const date = new Date(dateString);
-  if (!dateString || Number.isNaN(date.getTime())) return dateString || 'Undated';
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  // "2026-11-24" → "24 Nov 2026". Parsed by hand so the visitor's time zone
+  // cannot shift the day and every browser shows the same month names.
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateString || ''));
+  if (!match) return dateString || 'Undated';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return dateString;
+  return `${Number(match[3])} ${months[month - 1]} ${match[1]}`;
 }
 
 /* "Position held: Yes / No". A missing value is shown as such on purpose,
