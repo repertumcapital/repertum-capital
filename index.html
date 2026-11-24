@@ -68,11 +68,12 @@
           </p>
 
         <div class="overview-card" style="margin-top: var(--space-8);">
-          <p class="overview-card__header">Portfolio snapshot · As of <span data-as-of>loading…</span></p>
-          <div class="overview-stat"><span class="overview-stat__label">Total return since start</span><span class="overview-stat__value" id="snapshotReturn" data-metric>…</span></div>
-          <div class="overview-stat"><span class="overview-stat__label">Benchmark MSCI World</span><span class="overview-stat__value" id="snapshotBenchmark" data-metric>…</span></div>
+          <p class="overview-card__header">Performance · as of <span data-performance-as-of>loading…</span></p>
+          <div class="overview-stat"><span class="overview-stat__label">Time-weighted return since inception</span><span class="overview-stat__value" id="snapshotTwr" data-metric>…</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Annualized</span><span class="overview-stat__value" id="snapshotTwrAnnualized" data-metric>…</span></div>
+          <div class="overview-stat"><span class="overview-stat__label" id="snapshotBenchmarkLabel">Benchmark, same period</span><span class="overview-stat__value" id="snapshotBenchmark" data-metric>…</span></div>
           <div class="overview-stat"><span class="overview-stat__label">Difference vs benchmark</span><span class="overview-stat__value" id="snapshotDifference" data-metric>…</span></div>
-          <div class="overview-stat"><span class="overview-stat__label">Start date</span><span class="overview-stat__value" id="snapshotStartDate" data-metric>…</span></div>
+          <div class="overview-stat"><span class="overview-stat__label">Inception date</span><span class="overview-stat__value" data-inception-date>…</span></div>
           <div class="overview-stat"><span class="overview-stat__label">Open positions</span><span class="overview-stat__value" id="snapshotPositions" data-metric>…</span></div>
         </div>
       </div>
@@ -84,22 +85,22 @@
       <div class="section-header">
         <span class="section-label">Key figures</span>
         <h2 class="section-title">Performance at a glance</h2>
-        <p class="section-desc">Calculated from the trades in my log, all made with my own money. As of <span data-as-of>loading…</span>. Prices from Google Finance can be delayed by up to 20 minutes.</p>
+        <p class="section-desc">The time-weighted return measures how my investments performed, independent of when I paid money in or took it out. It is calculated in my spreadsheet from my account values and deposits; only the percentages are published. Performance as of <span data-performance-as-of>loading…</span>; trade data as of <span data-as-of>loading…</span>.</p>
       </div>
 
       <div class="data-status" data-data-status hidden></div>
 
       <div class="kpi-grid">
         <div class="kpi-card">
-          <p class="kpi-card__label">Total return since start</p>
-          <p class="kpi-card__value" id="kpiReturn" data-metric>…</p>
-          <p class="kpi-card__note" id="kpiReturnNote">Profit/loss of all trades ÷ start capital</p>
+          <p class="kpi-card__label">Time-weighted return, year-to-date</p>
+          <p class="kpi-card__value" id="kpiTwrYtd" data-metric>…</p>
+          <p class="kpi-card__note" id="kpiTwrYtdNote">Not annualized</p>
         </div>
 
         <div class="kpi-card">
-          <p class="kpi-card__label">Return on open positions</p>
-          <p class="kpi-card__value" id="kpiOpenReturn" data-metric>…</p>
-          <p class="kpi-card__note">Unrealized, relative to their cost</p>
+          <p class="kpi-card__label" id="kpiBenchmarkYtdLabel">Benchmark, year-to-date</p>
+          <p class="kpi-card__value" id="kpiBenchmarkYtd" data-metric>…</p>
+          <p class="kpi-card__note">Same period</p>
         </div>
 
         <div class="kpi-card">
@@ -154,16 +155,22 @@
   <script src="trade-data.js"></script>
   <script src="nav.js"></script>
   <script>
-    tradeData.initTradeData(({ metrics: m }) => {
+    tradeData.initTradeData(({ metrics: m, performance: p }) => {
       const t = tradeData;
-      t.setValue("snapshotReturn", t.formatPercent(m.totalReturnPct), m.totalReturnPct);
-      t.setValue("snapshotBenchmark", t.formatPercent(m.benchmarkReturnPct));
-      t.setValue("snapshotDifference", m.differencePct === null ? t.NA : `${t.formatNumber(m.differencePct)} pp`, m.differencePct);
-      t.setValue("snapshotStartDate", t.formatDate(m.startDate));
+      const bench = p.benchmarkName || "Benchmark";
+      t.setValue("snapshotTwr", t.formatPercent(p.twrSinceInception), p.twrSinceInception);
+      t.setValue("snapshotTwrAnnualized",
+        p.isAtLeastOneYear ? t.formatPercent(p.twrAnnualized)
+          : Number.isFinite(p.periodDays) ? "not shown (under one year)" : t.NA,
+        p.twrAnnualized);
+      t.setValue("snapshotBenchmarkLabel", `${bench}, same period`);
+      t.setValue("snapshotBenchmark", t.formatPercent(p.benchmarkSinceInception), p.benchmarkSinceInception);
+      t.setValue("snapshotDifference", Number.isFinite(p.differenceSinceInception) ? `${t.formatPercent(p.differenceSinceInception).replace("%", "")} pp` : t.NA, p.differenceSinceInception);
       t.setValue("snapshotPositions", String(m.openCount));
 
-      t.setValue("kpiReturn", t.formatPercent(m.totalReturnPct), m.totalReturnPct);
-      t.setValue("kpiOpenReturn", t.formatPercent(m.openReturnPct), m.openReturnPct);
+      t.setValue("kpiTwrYtd", t.formatPercent(p.twrYtd), p.twrYtd);
+      t.setValue("kpiBenchmarkYtdLabel", `${bench}, year-to-date`);
+      t.setValue("kpiBenchmarkYtd", t.formatPercent(p.benchmarkYtd), p.benchmarkYtd);
       t.setValue("kpiWinRate", Number.isFinite(m.winRatePct) ? `${t.formatNumber(m.winRatePct, 0)}%` : t.NA);
       t.setValue("kpiWinRateNote", `${m.closedWinners} of ${m.validClosedCount} closed trades with a gain`);
       t.setValue("kpiAvgHolding", Number.isFinite(m.avgHoldingDays) ? `${t.formatNumber(m.avgHoldingDays, 0)} days` : t.NA);

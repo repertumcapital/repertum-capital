@@ -1,14 +1,15 @@
 // Run with: node --test tests/trade-data.test.js
-// Uses made-up trades only (no real position sizes in the repo).
+// Uses made-up trades only (no real data in the repo).
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-globalThis.SITE_DATA_CONFIG = { googleSheet: { csvUrl: "unused" }, portfolio: { startCapital: 1000 } };
+globalThis.SITE_DATA_CONFIG = { googleSheet: { tradesCsvUrl: "unused", publicCsvUrl: "unused" } };
 const td = require("../trade-data.js");
 
-const HEADER = 'Datum Einstieg,Datum Ausstieg,Ticker,Name,Current Price,Side (Long/Short),Stück,Entry Price,Exit Price,P&L €,P&L %,Holding Period (Tage)';
+const HEADER = 'Datum Einstieg,Datum Ausstieg,Ticker,Name,Current Price,Side (Long/Short),Entry Price,Exit Price,P&L %,Holding Period (Tage),Currency,FX Entry,FX Exit/Current';
 const AS_OF = new Date(Date.UTC(2026, 10, 24));
 const near = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
+const errors = issues => issues.filter(i => i.level === "error");
 
 test("parseNumber reads German formats", () => {
   near(td.parseNumber("952,89").value, 952.89);
@@ -36,44 +37,77 @@ test("parseDate reads dd.mm.yyyy and rejects impossible dates", () => {
   assert.ok(td.parseDate("2026/11/24").error);
 });
 
-test("metrics follow the documented formulas", () => {
+test("trade returns for long and short, win rate, holding period", () => {
   const csv = [
     HEADER,
-    '10.03.2025,,AAA,Alpha,"120,00",Long,"2,00","100,00",,,"20,00%",',          // open long  +20 %, pnl +40
-    '01.01.2025,31.01.2025,BBB,Beta,-,Short,"10,00","10,00","8,00",,"20,00%",30', // closed short +20 %, pnl +20
-    '15.02.2025,15.04.2025,CCC,Gamma,-,Long,"5,00","50,00","40,00",,"-20,00%",59' // closed long -20 %, pnl -50
+    '10.03.2025,,AAA,Alpha,"120,00",Long,"100,00",,"20,00%",,EUR,,',            // open long +20 %
+    '01.01.2025,31.01.2025,BBB,Beta,-,Short,"10,00","8,00","20,00%",30,EUR,,',   // closed short +20 %
+    '15.02.2025,15.04.2025,CCC,Gamma,-,Long,"50,00","40,00","-20,00%",59,EUR,,'  // closed long −20 %
   ].join("\n");
   const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
-
+  assert.equal(issues.length, 0, JSON.stringify(issues));
   near(trades[0].returnPct, 20);
   near(trades[1].returnPct, 20);
   near(trades[2].returnPct, -20);
-  near(metrics.totalReturnPct, (40 + 20 - 50) / 1000 * 100);   // 1 %
-  near(metrics.openReturnPct, 40 / 200 * 100);                  // 20 %
-  near(metrics.winRatePct, 50);                                 // 1 of 2 closed
+  near(metrics.winRatePct, 50);                       // 1 of 2 closed
   near(metrics.avgHoldingDays, (30 + 59) / 2);
-  assert.equal(metrics.startDate.toISOString(), "2025-01-01T00:00:00.000Z"); // date order, not text order
-  assert.equal(issues.filter(i => !i.text.includes("Currency column")).length, 0, JSON.stringify(issues));
+  assert.equal(metrics.firstTradeDate.toISOString(), "2025-01-01T00:00:00.000Z"); // date order, not text order
 });
 
-test("error cells are excluded visibly, not counted as 0", () => {
+test("USD trades are converted with the entry-date and current/exit FX rates", () => {
   const csv = [
     HEADER,
-    '10.03.2025,,AAA,Alpha,#N/A,Long,"2,00","100,00",,#N/A,#N/A,',
-    '10.03.2025,,BBB,Beta,"110,00",Long,"1,00","100,00",,,"10,00%",'
+    // long USD: 100 → 110 (+10 % local); FX 0,90 → 0,80 EUR per USD → 88/90 − 1 = −2.22 %
+    '01.02.2025,,EMX,EM ETF,"110,00",Long,"100,00",,"10,00%",,USD,"0,90","0,80"',
+    // short USD, closed: 50 → 40 (+20 % local); FX 0,90 → 1,00 → (45 − 40)/45 = +11.11 %
+    '01.03.2025,01.04.2025,SHRT,Short Co,-,Short,"50,00","40,00","20,00%",31,USD,"0,90","1,00"'
+  ].join("\n");
+  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(issues.length, 0, JSON.stringify(issues));
+  near(trades[0].localReturnPct, 10);
+  near(trades[0].returnPct, (88 - 90) / 90 * 100);
+  near(trades[1].localReturnPct, 20);
+  near(trades[1].returnPct, (45 - 40) / 45 * 100);
+  near(metrics.winRatePct, 100);
+});
+
+test("pence prices (GBX) use EUR per GBP", () => {
+  const csv = [HEADER, '01.02.2025,,MTE,UK Co,"600,00",Long,"500,00",,"20,00%",,GBX,"1,20","1,10"'].join("\n");
+  const { trades, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(issues.length, 0, JSON.stringify(issues));
+  near(trades[0].returnPct, (6 * 1.1 - 5 * 1.2) / (5 * 1.2) * 100); // +10 %
+  assert.equal(trades[0].currency, "GBX");
+});
+
+test("error cells and missing FX rates exclude the trade visibly", () => {
+  const csv = [
+    HEADER,
+    '10.03.2025,,AAA,Alpha,#N/A,Long,"100,00",,#N/A,,EUR,,',
+    '01.02.2025,,EMX,EM ETF,"110,00",Long,"100,00",,"10,00%",,USD,#N/A,"0,80"'
   ].join("\n");
   const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
   assert.equal(trades[0].valid, false);
+  assert.equal(trades[1].valid, false);
   assert.ok(Number.isNaN(trades[0].returnPct));
-  near(metrics.totalReturnPct, 10 / 1000 * 100);
-  assert.equal(metrics.excludedCount, 1);
-  assert.ok(issues.some(i => i.level === "error" && i.text.includes("AAA") && i.text.includes("#N/A")));
+  assert.equal(metrics.excludedCount, 2);
+  assert.ok(errors(issues).some(i => i.text.includes("AAA") && i.text.includes("#N/A")));
+  assert.ok(errors(issues).some(i => i.text.includes("EMX") && i.text.includes("FX Entry")));
 });
 
-test("mismatch with the sheet's own P&L % is reported", () => {
-  const csv = [HEADER, '10.03.2025,,AAA,Alpha,"120,00",Long,"1,00","100,00",,,"25,00%",'].join("\n");
-  const { issues } = td.processCsv(csv, AS_OF);
+test("missing entry date: trade kept with a warning; names lose line breaks", () => {
+  const csv = HEADER + '\n,,AAA,"Alpha\nFund","110,00",Long,"100,00",,"10,00%",,EUR,,';
+  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
+  assert.equal(trades[0].valid, true);
+  assert.equal(trades[0].name, "Alpha Fund");
+  assert.equal(metrics.firstTradeDate, null);
+  assert.ok(issues.some(i => i.level === "warning" && i.text.includes("entry date missing")));
+});
+
+test("mismatch with the sheet's own P&L % is reported; missing currency column is a warning", () => {
+  const h = 'Datum Einstieg,Datum Ausstieg,Ticker,Name,Current Price,Side (Long/Short),Entry Price,Exit Price,P&L %';
+  const { issues } = td.processCsv([h, '10.03.2025,,AAA,Alpha,"120,00",Long,"100,00",,"25,00%"'].join("\n"), AS_OF);
   assert.ok(issues.some(i => i.level === "warning" && i.text.includes("AAA")));
+  assert.ok(issues.some(i => i.level === "warning" && i.text.includes("Currency column")));
 });
 
 test("missing columns stop the calculation", () => {
@@ -82,65 +116,50 @@ test("missing columns stop the calculation", () => {
   assert.equal(issues[0].level, "error");
 });
 
-const FX_HEADER = HEADER + ',Currency,FX Entry,FX Exit/Current';
+const PUBLIC = [
+  "Metric,Value",
+  "Note,Percentages only. Calculated in the Performance tab.",
+  "Inception date,21.01.2025",
+  "As of,31.10.2026",
+  'Time-weighted return since inception,"21,00%"',
+  'Time-weighted return year-to-date,"8,50%"',
+  "Benchmark,MSCI World (EUNL)",
+  'Benchmark return since inception,"18,00%"',
+  'Benchmark return year-to-date,"9,25%"'
+].join("\n");
 
-test("USD trades are converted with the entry-date and current/exit FX rates", () => {
-  const csv = [
-    FX_HEADER,
-    // long USD: 100 → 110 (+10 % local); FX 0,90 → 0,80 EUR per USD
-    '01.02.2025,,EMX,EM ETF,"110,00",Long,"10,00","100,00",,,"10,00%",,USD,"0,90","0,80"',
-    // short USD, closed: 50 → 40 (+20 % local); FX 0,90 → 1,00
-    '01.03.2025,01.04.2025,SHRT,Short Co,-,Short,"10,00","50,00","40,00",,"20,00%",31,USD,"0,90","1,00"',
-    // EUR trade without FX values
-    '01.01.2025,,EUR1,Euro Co,"105,00",Long,"10,00","100,00",,,"5,00%",,EUR,,'
-  ].join("\n");
-  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
+test("Public tab: values, difference and annualization over >= 1 year", () => {
+  const { performance: p, issues } = td.processPublicCsv(PUBLIC);
   assert.equal(issues.length, 0, JSON.stringify(issues));
-
-  // long: cost 100×0.9×10 = 900; value 110×0.8×10 = 880 → pnl −20, −2.22 % in EUR
-  near(trades[0].localReturnPct, 10);
-  near(trades[0].pnl, -20, 1e-9);
-  near(trades[0].returnPct, -20 / 900 * 100);
-  // short: cost 50×0.9×10 = 450; pnl = (450 − 40×1.0×10) = +50 → +11.11 % in EUR
-  near(trades[1].localReturnPct, 20);
-  near(trades[1].pnl, 50, 1e-9);
-  near(trades[1].returnPct, 50 / 450 * 100);
-  // EUR trade unchanged
-  near(trades[2].returnPct, 5);
-
-  near(metrics.totalReturnPct, (-20 + 50 + 50) / 1000 * 100);
-  near(metrics.winRatePct, 100); // the closed short gained in EUR
-  assert.equal(trades[0].currency, "USD");
+  near(p.twrSinceInception, 21);
+  near(p.benchmarkYtd, 9.25);
+  assert.equal(p.benchmarkName, "MSCI World (EUNL)");
+  assert.equal(p.periodDays, 648);
+  near(p.twrAnnualized, (Math.pow(1.21, 365.25 / 648) - 1) * 100);
+  near(p.differenceSinceInception, 3);
+  near(p.differenceYtd, -0.75);
 });
 
-test("missing FX rate for a non-EUR trade is an error, missing currency column a warning", () => {
-  const csv = [FX_HEADER, '01.02.2025,,EMX,EM ETF,"110,00",Long,"10,00","100,00",,,"10,00%",,USD,#N/A,"0,80"'].join("\n");
-  const r = td.processCsv(csv, AS_OF);
-  assert.equal(r.trades[0].valid, false);
-  assert.ok(r.issues.some(i => i.level === "error" && i.text.includes("FX Entry")));
-
-  const r2 = td.processCsv([HEADER, '10.03.2025,,AAA,Alpha,"120,00",Long,"1,00","100,00",,,"20,00%",'].join("\n"), AS_OF);
-  assert.ok(r2.issues.some(i => i.level === "warning" && i.text.includes("Currency column")));
+test("Public tab: periods under one year are not annualized", () => {
+  const csv = PUBLIC.replace("21.01.2025", "01.03.2026");
+  const { performance: p } = td.processPublicCsv(csv);
+  assert.equal(p.isAtLeastOneYear, false);
+  assert.ok(Number.isNaN(p.twrAnnualized));
+  assert.ok(Number.isNaN(td.annualize(10, 364)));
 });
 
-test("pence prices (GBX) use EUR per GBP and are divided by 100", () => {
-  const csv = [FX_HEADER, '01.02.2025,,MTE,UK Co,"600,00",Long,"10,00","500,00",,,"20,00%",,GBX,"1,20","1,10"'].join("\n");
-  const { trades, issues } = td.processCsv(csv, AS_OF);
-  assert.equal(issues.length, 0, JSON.stringify(issues));
-  // cost 5.00 GBP × 1.20 × 10 = 60 EUR; value 6.00 × 1.10 × 10 = 66 EUR → +6 EUR, +10 %
-  near(trades[0].pnl, 6, 1e-9);
-  near(trades[0].returnPct, 10);
-  assert.equal(trades[0].currency, "GBX");
-});
-
-test("missing entry date keeps the trade in the totals with a warning; names lose line breaks", () => {
-  const csv = HEADER + ',Currency\n,,AAA,"Alpha\nFund","110,00",Long,"1,00","100,00",,,"10,00%",,EUR';
-  const { trades, metrics, issues } = td.processCsv(csv, AS_OF);
-  assert.equal(trades[0].valid, true);
-  assert.equal(trades[0].name, "Alpha Fund");
-  near(metrics.totalReturnPct, 1);
-  assert.equal(metrics.startDate, null);
-  assert.ok(issues.some(i => i.level === "warning" && i.text.includes("entry date missing")));
+test("Public tab: plain fractions, error cells and missing rows are errors", () => {
+  const csv = PUBLIC
+    .replace('"21,00%"', '"0,21"')
+    .replace('"9,25%"', "#N/A")
+    .replace(/Time-weighted return year-to-date.*\n/, "");
+  const { performance: p, issues } = td.processPublicCsv(csv);
+  assert.ok(Number.isNaN(p.twrSinceInception));
+  assert.ok(Number.isNaN(p.benchmarkYtd));
+  assert.ok(Number.isNaN(p.twrYtd));
+  assert.ok(issues.some(i => i.text.includes("% sign missing")));
+  assert.ok(issues.some(i => i.text.includes("#N/A")));
+  assert.ok(issues.some(i => i.text.includes("year-to-date") && i.text.includes("missing")));
 });
 
 test("formatting uses 1,234.56 and 24 Nov 2026", () => {

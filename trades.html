@@ -73,9 +73,9 @@
 
         <div class="metric-defs-grid">
           <div class="metric-def">
-            <p class="metric-def__name">Total return since start</p>
-            <p class="metric-def__value" id="metricTotalReturn" data-metric>…</p>
-            <p class="metric-def__desc">Profit/loss of all trades (open and closed) divided by the start capital.</p>
+            <p class="metric-def__name">Time-weighted return since inception</p>
+            <p class="metric-def__value" id="metricTwr" data-metric>…</p>
+            <p class="metric-def__desc" id="metricTwrDesc">Whole account, independent of deposits and withdrawals.</p>
           </div>
 
           <div class="metric-def">
@@ -128,7 +128,7 @@
         </div>
 
         <p class="note" style="margin-top: var(--space-3);">
-          All trades were made with my own money. Position sizes and amounts are not published.
+          All trades were made with my own money. Position sizes and amounts are not published. Each trade's return is per share and in EUR; it says nothing about the size of the position.
         </p>
       </div>
     </section>
@@ -171,9 +171,10 @@
   <script src="trade-data.js"></script>
   <script src="nav.js"></script>
   <script>
-    tradeData.initTradeData(({ trades, metrics: m }) => {
+    tradeData.initTradeData(({ trades, metrics: m, performance: p }) => {
       const t = tradeData;
-      t.setValue("metricTotalReturn", t.formatPercent(m.totalReturnPct), m.totalReturnPct);
+      t.setValue("metricTwr", t.formatPercent(p.twrSinceInception), p.twrSinceInception);
+      t.setValue("metricTwrDesc", `Whole account, independent of deposits and withdrawals. ${p.benchmarkName || "Benchmark"} over the same period: ${t.formatPercent(p.benchmarkSinceInception)}. As of ${p.asOf ? t.formatDate(p.asOf) : t.NA}.`);
       t.setValue("metricWinRate", Number.isFinite(m.winRatePct) ? `${t.formatNumber(m.winRatePct, 0)}%` : t.NA);
       t.setValue("metricWinRateDesc", `Share of closed trades that ended with a gain (${m.closedWinners} of ${m.validClosedCount}).`);
       t.setValue("metricOpenPositions", String(m.openCount));
