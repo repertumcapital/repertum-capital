@@ -47,3 +47,43 @@ PDFs go into the `research/` folder at the repo root.
 | `excerpt`, `category`, `tags`, `image` | no | |
 
 Wording rules: no "buy now", "strong buy", price targets presented as advice, or return promises.
+
+# Trade data and metrics
+
+All trade numbers come from the published Google Sheet (`data-config.js` → `csvUrl`).
+`trade-data.js` is the only file that fetches, parses and calculates them. Pages only display the results.
+
+## Loading and caching
+
+- The CSV is downloaded once and reused by every page for 10 minutes (`cacheMinutes`, stored in the browser's session storage). All pages of a visit therefore show the same version.
+- "As of" on each page is the time this version was downloaded. Google Finance prices inside the sheet can be delayed by up to 20 minutes, and Google can take a few minutes to update the published CSV after a change.
+
+## Parsing
+
+- Columns are found by their header name (`Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Stück`, `Entry Price`, `Exit Price`, `P&L %`, `Holding Period (Tage)`), so the column order can change.
+- Numbers must be in German format: `1.234,56`, `952,89`, `25,10%`. English formats like `1,234.56` are rejected instead of guessed.
+- Dates must be `24.11.2026` (or ISO `2026-11-24`). An empty exit date means the trade is open.
+- `#N/A`, `#REF!`, `#VALUE!`, empty cells, `-` and "Loading..." are errors, never 0. A trade with an error in a cell it needs is shown with "n/a", excluded from all totals, and listed in a visible notice on the page.
+- The sheet's own `P&L %` and `Holding Period` columns are only used as a cross-check. A difference of more than 0.05 percentage points (or any day difference) is shown as a warning.
+
+## Formulas
+
+| Metric | Formula |
+|---|---|
+| Price *P* of a trade | exit price if closed, current price if open |
+| Return per trade | long: (*P* − entry) ÷ entry × 100 · short: (entry − *P*) ÷ entry × 100 |
+| P&L per trade (internal, never shown) | ±(*P* − entry) × shares |
+| Total return since start | Σ P&L of all valid trades ÷ start capital (`data-config.js`) × 100 |
+| Return on open positions | Σ P&L of open trades ÷ Σ (entry × shares) of open trades × 100 |
+| Win rate | closed trades with return > 0 ÷ all valid closed trades × 100 |
+| Days held | exit date − entry date (open trades: download date − entry date) |
+| Average holding period | mean of days held over closed trades |
+| Start date | earliest entry date |
+| Benchmark return | (last close − first close on/after start date) ÷ that close × 100, MSCI World ETF `EUNL.DE` |
+| Difference vs benchmark | total return − benchmark return, in percentage points |
+
+If the benchmark cannot be loaded it is shown as "n/a", never as 0%.
+
+## Tests
+
+`node --test tests/trade-data.test.js` checks parsing, error handling and every formula with made-up trades.

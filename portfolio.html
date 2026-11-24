@@ -63,31 +63,22 @@
   <main>
     <section class="section" style="padding-bottom: var(--space-8);">
       <div class="container">
+        <p class="note" style="margin-bottom: var(--space-4);">As of <span data-as-of>loading…</span>. Prices from Google Finance can be delayed by up to 20 minutes.</p>
+        <div class="data-status" data-data-status hidden></div>
         <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
           <div class="kpi-card">
-            <p class="kpi-card__label">Invest. Kapital</p>
-            <p class="kpi-card__value" id="portfolioInvestedCapital">€ 0</p>
+            <p class="kpi-card__label">Open positions</p>
+            <p class="kpi-card__value" id="portfolioPositionCount" data-metric>…</p>
           </div>
           <div class="kpi-card">
-            <p class="kpi-card__label">Marktwert</p>
-            <p class="kpi-card__value" id="portfolioMarketValue">€ 0</p>
+            <p class="kpi-card__label">Return on open positions</p>
+            <p class="kpi-card__value" id="portfolioOpenReturn" data-metric>…</p>
+            <p class="kpi-card__note">Unrealized, relative to their cost</p>
           </div>
           <div class="kpi-card">
-            <p class="kpi-card__label">Unrealized P&amp;L</p>
-            <p class="kpi-card__value" id="portfolioUnrealizedPnl">€ 0</p>
-          </div>
-          <div class="kpi-card">
-            <p class="kpi-card__label">Unrealized P&amp;L %</p>
-            <p class="kpi-card__value" id="portfolioUnrealizedPnlPct">0 %</p>
-          </div>
-          <div class="kpi-card">
-            <p class="kpi-card__label">Cash-Reserve</p>
-            <p class="kpi-card__value" id="portfolioCashReserve">€ 0</p>
-            <p class="kpi-card__note" id="portfolioCashReserveNote">0 % des Portfolios</p>
-          </div>
-          <div class="kpi-card">
-            <p class="kpi-card__label">Positionen</p>
-            <p class="kpi-card__value" id="portfolioPositionCount">0</p>
+            <p class="kpi-card__label">Total return since start</p>
+            <p class="kpi-card__value" id="portfolioTotalReturn" data-metric>…</p>
+            <p class="kpi-card__note">All trades ÷ start capital</p>
           </div>
         </div>
       </div>
@@ -96,33 +87,27 @@
     <section class="section" style="padding-top: var(--space-6);">
       <div class="container">
         <div class="section-header">
-          <span class="section-label">Portfolio-Übersicht</span>
-          <h2 class="section-title">Offene Positionen</h2>
-          <p class="section-desc">Übersicht aller aktuell offenen Positionen.</p>
+          <span class="section-label">Holdings</span>
+          <h2 class="section-title">Open positions</h2>
+          <p class="section-desc">All positions that are currently open. Position sizes are not published.</p>
         </div>
 
         <div class="table-wrapper">
-          <table class="data-table" aria-label="Portfolio Holdings">
+          <table class="data-table" aria-label="Open positions">
             <thead>
               <tr>
                 <th>Ticker</th>
                 <th>Name</th>
-                <th>Position</th>
-                <th>Status</th>
-                <th class="right">Entry (€)</th>
-                <th class="right">Kurs (€)</th>
-                <th class="right">Stück</th>
-                <th class="right">Unreal. P&amp;L</th>
-                <th class="right">P&amp;L %</th>
+                <th>Side</th>
+                <th>Entry date</th>
+                <th class="right">Entry price</th>
+                <th class="right">Current price</th>
+                <th class="right">Return</th>
               </tr>
             </thead>
             <tbody id="portfolioTableBody"></tbody>
           </table>
         </div>
-
-        <p class="note" style="margin-top: var(--space-4);">
-          Angezeigt werden ausschließlich offene Positionen.
-        </p>
       </div>
     </section>
   </main>
@@ -164,47 +149,25 @@
   <script src="trade-data.js"></script>
   <script src="nav.js"></script>
   <script>
-    function applySignedClass(el, value) {
-      if (!el) return;
-      el.classList.remove("positive", "negative");
-      if (value > 0) el.classList.add("positive");
-      if (value < 0) el.classList.add("negative");
-    }
+    tradeData.initTradeData(({ trades, metrics: m }) => {
+      const t = tradeData;
+      t.setValue("portfolioPositionCount", String(m.openCount));
+      t.setValue("portfolioOpenReturn", t.formatPercent(m.openReturnPct), m.openReturnPct);
+      t.setValue("portfolioTotalReturn", t.formatPercent(m.totalReturnPct), m.totalReturnPct);
 
-    function sideBadgeClass(side) {
-      return String(side).toLowerCase() === "short" ? "badge--red" : "badge--green";
-    }
-
-    tradeData.initTradeData(({ metrics }) => {
-      const openTrades = metrics.openTradesWithWeight;
-      const unrealizedPct = metrics.totalInvested ? (metrics.totalUnrealizedPnl / metrics.totalInvested) * 100 : 0;
-      const cashPct = metrics.startCapital ? (metrics.cashReserve / metrics.startCapital) * 100 : 0;
-
-      document.getElementById("portfolioInvestedCapital").textContent = tradeData.formatCurrency(metrics.totalInvested);
-      document.getElementById("portfolioMarketValue").textContent = tradeData.formatCurrency(metrics.totalMarketValue);
-      document.getElementById("portfolioUnrealizedPnl").textContent = tradeData.formatCurrency(metrics.totalUnrealizedPnl);
-      document.getElementById("portfolioUnrealizedPnlPct").textContent = tradeData.formatPercent(unrealizedPct, 2);
-      document.getElementById("portfolioCashReserve").textContent = tradeData.formatCurrency(metrics.cashReserve);
-      document.getElementById("portfolioCashReserveNote").textContent = `${tradeData.formatPercent(cashPct, 1)} des Portfolios`;
-      document.getElementById("portfolioPositionCount").textContent = metrics.openCount;
-
-      applySignedClass(document.getElementById("portfolioUnrealizedPnl"), metrics.totalUnrealizedPnl);
-      applySignedClass(document.getElementById("portfolioUnrealizedPnlPct"), unrealizedPct);
-
-      const tbody = document.getElementById("portfolioTableBody");
-      tbody.innerHTML = openTrades.map(trade => `
+      const open = trades.filter(tr => !tr.isClosed);
+      document.getElementById("portfolioTableBody").innerHTML = open.length
+        ? open.map(tr => `
         <tr>
-          <td><span class="ticker">${trade.ticker || "—"}</span></td>
-          <td>${trade.name || "—"}</td>
-          <td><span class="badge ${sideBadgeClass(trade.side)}">${trade.side || "Long"}</span></td>
-          <td><span class="badge badge--green">${trade.status}</span></td>
-          <td class="right">${tradeData.formatNumber(trade.entryPrice, 2)}</td>
-          <td class="right">${tradeData.formatNumber(trade.currentPrice, 2)}</td>
-          <td class="right">${tradeData.formatNumber(trade.shares, 0)}</td>
-          <td class="right ${trade.pnlEuro >= 0 ? "positive" : "negative"}">${tradeData.formatNumber(trade.pnlEuro, 0)}</td>
-          <td class="right ${trade.pnlPct >= 0 ? "positive" : "negative"}">${tradeData.formatPercent(trade.pnlPct, 1)}</td>
-        </tr>
-      `).join("");
+          <td><span class="ticker">${t.escapeHtml(tr.ticker || "—")}</span></td>
+          <td>${t.escapeHtml(tr.name || "—")}</td>
+          <td><span class="badge ${tr.side === "Short" ? "badge--red" : "badge--green"}">${tr.side}</span></td>
+          <td>${t.formatDate(tr.entryDate)}</td>
+          <td class="right">${t.formatNumber(tr.entryPrice)}</td>
+          <td class="right">${t.formatNumber(tr.currentPrice)}</td>
+          <td class="right ${t.signClass(tr.returnPct)}">${t.formatPercent(tr.returnPct)}</td>
+        </tr>`).join("")
+        : `<tr><td colspan="7">No open positions.</td></tr>`;
     });
   </script>
 </body>

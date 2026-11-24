@@ -1518,3 +1518,22 @@ a, button, [role="button"] {
   height: 100%;
   object-fit: cover;
 } 
+/* ─── DATA STATUS (trade-data.js) ────────────────────────── */
+.data-status {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+.data-status[hidden] { display: none; }
+.data-status__item {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 6px;
+  border-left: 3px solid;
+  font-size: var(--text-sm);
+}
+.data-status__item--error { background: var(--color-error-bg); border-color: var(--color-error); color: var(--color-text); }
+.data-status__item--warning { background: var(--color-warning-bg); border-color: var(--color-warning); color: var(--color-text); }
+.kpi-card__value.positive, .metric-def__value.positive { color: var(--color-success); }
+.kpi-card__value.negative, .metric-def__value.negative { color: var(--color-error); }
+.data-table thead th[data-trade-sort] { cursor: pointer; user-select: none; }
