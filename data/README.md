@@ -60,22 +60,26 @@ All trade numbers come from the published Google Sheet (`data-config.js` → `cs
 
 ## Parsing
 
-- Columns are found by their header name (`Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Stück`, `Entry Price`, `Exit Price`, `P&L %`, `Holding Period (Tage)`), so the column order can change.
+- Columns are found by their header name (`Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Stück`, `Entry Price`, `Exit Price`, `P&L %`, `Holding Period (Tage)`, `Currency`, `FX Entry`, `FX Exit/Current`), so the column order can change.
+- `Currency` is the currency of Entry, Exit and Current Price (`EUR`, `USD`, …). Without this column every trade is treated as EUR and the page shows a warning.
+- `FX Entry` and `FX Exit/Current` are EUR per 1 unit of the trade currency, on the entry date and on the exit date (closed) or today (open). They are only needed for non-EUR trades; if one is missing the trade is excluded and listed as an error.
 - Numbers must be in German format: `1.234,56`, `952,89`, `25,10%`. English formats like `1,234.56` are rejected instead of guessed.
 - Dates must be `24.11.2026` (or ISO `2026-11-24`). An empty exit date means the trade is open.
 - `#N/A`, `#REF!`, `#VALUE!`, empty cells, `-` and "Loading..." are errors, never 0. A trade with an error in a cell it needs is shown with "n/a", excluded from all totals, and listed in a visible notice on the page.
-- The sheet's own `P&L %` and `Holding Period` columns are only used as a cross-check. A difference of more than 0.05 percentage points (or any day difference) is shown as a warning.
+- The sheet's own `P&L %` is compared with the local return, and `Holding Period` with the calculated days; both are only used as a cross-check. A difference of more than 0.05 percentage points (or any day difference) is shown as a warning.
 
 ## Formulas
 
 | Metric | Formula |
 |---|---|
 | Price *P* of a trade | exit price if closed, current price if open |
-| Return per trade | long: (*P* − entry) ÷ entry × 100 · short: (entry − *P*) ÷ entry × 100 |
-| P&L per trade (internal, never shown) | ±(*P* − entry) × shares |
-| Total return since start | Σ P&L of all valid trades ÷ start capital (`data-config.js`) × 100 |
-| Return on open positions | Σ P&L of open trades ÷ Σ (entry × shares) of open trades × 100 |
-| Win rate | closed trades with return > 0 ÷ all valid closed trades × 100 |
+| Local return (trade currency, cross-check only) | long: (*P* − entry) ÷ entry × 100 · short: (entry − *P*) ÷ entry × 100 |
+| Cost per trade in EUR (internal, never shown) | entry × FX entry × shares |
+| P&L per trade in EUR (internal, never shown) | long: (*P* × FX now − entry × FX entry) × shares · short: (entry × FX entry − *P* × FX now) × shares |
+| Return per trade (shown) | P&L in EUR ÷ cost in EUR × 100. Same as the local return for EUR trades; includes the currency effect otherwise |
+| Total return since start | Σ P&L in EUR of all valid trades ÷ start capital (`data-config.js`) × 100 |
+| Return on open positions | Σ P&L in EUR of open trades ÷ Σ cost in EUR of open trades × 100 |
+| Win rate | closed trades with return in EUR > 0 ÷ all valid closed trades × 100 (shorts count as wins when the price fell) |
 | Days held | exit date − entry date (open trades: download date − entry date) |
 | Average holding period | mean of days held over closed trades |
 | Start date | earliest entry date |
