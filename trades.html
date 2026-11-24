@@ -64,34 +64,36 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <span class="section-label">Portfolio-Metriken</span>
-          <h2 class="section-title">Performance auf Portfolioebene</h2>
-          <p class="section-desc">Diese Kennzahlen werden aus den dokumentierten Trades aggregiert.</p>
+          <span class="section-label">Key figures</span>
+          <h2 class="section-title">Performance across all trades</h2>
+          <p class="section-desc">As of <span data-as-of>loading…</span>. Prices from Google Finance can be delayed by up to 20 minutes. How each figure is calculated is described below it.</p>
         </div>
+
+        <div class="data-status" data-data-status hidden></div>
 
         <div class="metric-defs-grid">
           <div class="metric-def">
-            <p class="metric-def__name">Gesamt-P&amp;L</p>
-            <p class="metric-def__value" id="metricTotalPnl">€ 0</p>
-            <p class="metric-def__desc">Summe aller realisierten und unrealisierten Trade-Ergebnisse.</p>
+            <p class="metric-def__name">Time-weighted return since inception</p>
+            <p class="metric-def__value" id="metricTwr" data-metric>…</p>
+            <p class="metric-def__desc" id="metricTwrDesc">Whole account, independent of deposits and withdrawals.</p>
           </div>
 
           <div class="metric-def">
-            <p class="metric-def__name">Hit Ratio</p>
-            <p class="metric-def__value" id="metricHitRatio">0 %</p>
-            <p class="metric-def__desc">Anteil profitabler Trades an allen Trades.</p>
+            <p class="metric-def__name">Win rate</p>
+            <p class="metric-def__value" id="metricWinRate" data-metric>…</p>
+            <p class="metric-def__desc" id="metricWinRateDesc">Share of closed trades that ended with a gain.</p>
           </div>
 
           <div class="metric-def">
-            <p class="metric-def__name">Offene Positionen</p>
-            <p class="metric-def__value" id="metricOpenPositions">0</p>
-            <p class="metric-def__desc">Aktuell im Portfolio befindliche Trades.</p>
+            <p class="metric-def__name">Open positions</p>
+            <p class="metric-def__value" id="metricOpenPositions" data-metric>…</p>
+            <p class="metric-def__desc">Trades without an exit date.</p>
           </div>
 
           <div class="metric-def">
-            <p class="metric-def__name">Ø Haltedauer</p>
-            <p class="metric-def__value" id="metricAvgHolding">0 Tage</p>
-            <p class="metric-def__desc">Durchschnittliche Haltedauer über alle Trades.</p>
+            <p class="metric-def__name">Average holding period</p>
+            <p class="metric-def__value" id="metricAvgHolding" data-metric>…</p>
+            <p class="metric-def__desc">Days from entry to exit, closed trades only.</p>
           </div>
         </div>
       </div>
@@ -100,26 +102,25 @@
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <span class="section-label">Trade Journal</span>
-          <h2 class="section-title">Trade Log</h2>
-          <p class="section-desc">Alle dokumentierten Trades im Überblick.</p>
+          <span class="section-label">Trade journal</span>
+          <h2 class="section-title">Trade log</h2>
+          <p class="section-desc">Every documented trade. Click a column header to sort. Prices are in the currency shown. Return: long (price − entry) ÷ entry, short (entry − price) ÷ entry, using the exit price for closed and the current price for open trades. For non-EUR trades, the return is converted to EUR at the exchange rate on the entry date and on the exit date (or today), so it includes the currency effect.</p>
         </div>
 
         <div class="table-wrapper">
-          <table class="data-table" aria-label="Trade Log">
+          <table class="data-table" aria-label="Trade log" id="tradeTable">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Einstieg</th>
-                <th>Ausstieg</th>
-                <th>Ticker</th>
-                <th>Side</th>
-                <th>Status</th>
-                <th class="right">Entry (€)</th>
-                <th class="right">Exit (€)</th>
-                <th class="right">Return %</th>
-                <th class="right">P&amp;L (€)</th>
-                <th class="right">Holding (Tage)</th>
+                <th data-trade-sort="entryDate">Entry date<span class="sort-icon"></span></th>
+                <th data-trade-sort="exitDate">Exit date<span class="sort-icon"></span></th>
+                <th data-trade-sort="ticker">Ticker<span class="sort-icon"></span></th>
+                <th data-trade-sort="currency">Currency<span class="sort-icon"></span></th>
+                <th data-trade-sort="side">Side<span class="sort-icon"></span></th>
+                <th data-trade-sort="status">Status<span class="sort-icon"></span></th>
+                <th class="right" data-trade-sort="entryPrice">Entry price<span class="sort-icon"></span></th>
+                <th class="right" data-trade-sort="price">Current / exit price<span class="sort-icon"></span></th>
+                <th class="right" data-trade-sort="returnPct">Return in EUR<span class="sort-icon"></span></th>
+                <th class="right" data-trade-sort="daysHeld">Days held<span class="sort-icon"></span></th>
               </tr>
             </thead>
             <tbody id="tradeTableBody"></tbody>
@@ -127,7 +128,7 @@
         </div>
 
         <p class="note" style="margin-top: var(--space-3);">
-          Alle dargestellten Werte basieren auf echten Transaktionen mit eigenem Kapital. Kein lizenziertes Investmentangebot.
+          All trades were made with my own money. Position sizes and amounts are not published. Each trade's return is per share and in EUR; it says nothing about the size of the position.
         </p>
       </div>
     </section>
@@ -170,37 +171,68 @@
   <script src="trade-data.js"></script>
   <script src="nav.js"></script>
   <script>
-    function signedClass(value) {
-      if (value > 0) return "positive";
-      if (value < 0) return "negative";
-      return "";
-    }
-
-    tradeData.initTradeData(({ trades, metrics }) => {
-      const totalPnlEl = document.getElementById("metricTotalPnl");
-      totalPnlEl.textContent = tradeData.formatCurrency(metrics.totalPnl);
-      totalPnlEl.classList.add(signedClass(metrics.totalPnl));
-
-      document.getElementById("metricHitRatio").textContent = tradeData.formatPercent(metrics.hitRatio, 1);
-      document.getElementById("metricOpenPositions").textContent = metrics.openCount;
-      document.getElementById("metricAvgHolding").textContent = `${tradeData.formatNumber(metrics.avgHoldingDays, 1)} Tage`;
+    tradeData.initTradeData(({ trades, metrics: m, performance: p }) => {
+      const t = tradeData;
+      t.setValue("metricTwr", t.formatPercent(p.twrSinceInception), p.twrSinceInception);
+      t.setValue("metricTwrDesc", `Whole account, independent of deposits and withdrawals. ${p.benchmarkName || "Benchmark"} over the same period: ${t.formatPercent(p.benchmarkSinceInception)}. As of ${p.asOf ? t.formatDate(p.asOf) : t.NA}.`);
+      t.setValue("metricWinRate", Number.isFinite(m.winRatePct) ? `${t.formatNumber(m.winRatePct, 0)}%` : t.NA);
+      t.setValue("metricWinRateDesc", `Share of closed trades that ended with a gain (${m.closedWinners} of ${m.validClosedCount}).`);
+      t.setValue("metricOpenPositions", String(m.openCount));
+      t.setValue("metricAvgHolding", Number.isFinite(m.avgHoldingDays) ? `${t.formatNumber(m.avgHoldingDays, 0)} days` : t.NA);
 
       const tbody = document.getElementById("tradeTableBody");
-      tbody.innerHTML = trades.map(trade => `
-        <tr>
-          <td class="mono">${trade.id}</td>
-          <td>${trade.entryDate || "—"}</td>
-          <td>${trade.exitDate || "—"}</td>
-          <td><span class="ticker">${trade.ticker || "—"}</span></td>
-          <td><span class="badge badge--navy">${trade.side || "Long"}</span></td>
-          <td><span class="badge ${trade.isClosed ? "badge--gray" : "badge--green"}">${trade.status}</span></td>
-          <td class="right">${Number.isFinite(trade.entryPrice) ? tradeData.formatNumber(trade.entryPrice, 2) : "—"}</td>
-          <td class="right">${Number.isFinite(trade.exitPrice) ? tradeData.formatNumber(trade.exitPrice, 2) : "—"}</td>
-          <td class="right ${signedClass(trade.pnlPct)}">${Number.isFinite(trade.pnlPct) ? tradeData.formatPercent(trade.pnlPct, 1) : "—"}</td>
-          <td class="right ${signedClass(trade.pnlEuro)}">${Number.isFinite(trade.pnlEuro) ? tradeData.formatNumber(trade.pnlEuro, 0) : "—"}</td>
-          <td class="right">${Number.isFinite(trade.holdingDays) ? tradeData.formatNumber(trade.holdingDays, 0) : "—"}</td>
-        </tr>
-      `).join("");
+      const headers = document.querySelectorAll("#tradeTable th[data-trade-sort]");
+      let sortKey = "entryDate";
+      let sortDir = -1; // newest first
+
+      function sortValue(tr, key) {
+        const v = tr[key];
+        if (v instanceof Date) return v.getTime();
+        if (typeof v === "number") return Number.isFinite(v) ? v : null;
+        return v ? String(v).toLowerCase() : null;
+      }
+
+      function render() {
+        const rows = [...trades].sort((a, b) => {
+          const va = sortValue(a, sortKey), vb = sortValue(b, sortKey);
+          if (va === null && vb === null) return 0;
+          if (va === null) return 1;   // empty values always last
+          if (vb === null) return -1;
+          return (va < vb ? -1 : va > vb ? 1 : 0) * sortDir;
+        });
+        tbody.innerHTML = rows.map(tr => `
+        <tr${tr.valid ? "" : ' title="' + t.escapeHtml(tr.problems.join("; ")) + '"'}>
+          <td>${t.formatDate(tr.entryDate)}</td>
+          <td>${t.formatDate(tr.exitDate)}</td>
+          <td><span class="ticker">${t.escapeHtml(tr.ticker || "—")}</span></td>
+          <td>${t.escapeHtml(tr.currency)}</td>
+          <td><span class="badge badge--navy">${tr.side}</span></td>
+          <td><span class="badge ${tr.isClosed ? "badge--gray" : "badge--green"}">${tr.status}</span></td>
+          <td class="right">${t.formatNumber(tr.entryPrice)}</td>
+          <td class="right">${t.formatNumber(tr.price)}</td>
+          <td class="right ${t.signClass(tr.returnPct)}"${tr.currency !== "EUR" && tr.valid ? ` title="${t.formatPercent(tr.localReturnPct)} in ${t.escapeHtml(tr.currency)}"` : ""}>${t.formatPercent(tr.returnPct)}</td>
+          <td class="right">${Number.isFinite(tr.daysHeld) ? t.formatNumber(tr.daysHeld, 0) : t.NA}</td>
+        </tr>`).join("");
+        headers.forEach(h => {
+          const active = h.dataset.tradeSort === sortKey;
+          h.classList.toggle("sorted", active);
+          h.setAttribute("aria-sort", active ? (sortDir === 1 ? "ascending" : "descending") : "none");
+          h.querySelector(".sort-icon").textContent = active ? (sortDir === 1 ? " ▲" : " ▼") : "";
+        });
+      }
+
+      headers.forEach(h => {
+        h.tabIndex = 0;
+        const activate = () => {
+          if (sortKey === h.dataset.tradeSort) sortDir = -sortDir;
+          else { sortKey = h.dataset.tradeSort; sortDir = 1; }
+          render();
+        };
+        h.addEventListener("click", activate);
+        h.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } });
+      });
+
+      render();
     });
   </script>
 </body>
