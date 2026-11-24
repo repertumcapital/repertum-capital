@@ -63,6 +63,8 @@ All trade numbers come from the published Google Sheet (`data-config.js` → `cs
 - Columns are found by their header name (`Datum Einstieg`, `Datum Ausstieg`, `Ticker`, `Name`, `Current Price`, `Side (Long/Short)`, `Stück`, `Entry Price`, `Exit Price`, `P&L %`, `Holding Period (Tage)`, `Currency`, `FX Entry`, `FX Exit/Current`), so the column order can change.
 - `Currency` is the currency of Entry, Exit and Current Price (`EUR`, `USD`, …). Without this column every trade is treated as EUR and the page shows a warning.
 - `FX Entry` and `FX Exit/Current` are EUR per 1 unit of the trade currency, on the entry date and on the exit date (closed) or today (open). They are only needed for non-EUR trades; if one is missing the trade is excluded and listed as an error.
+- `GBX` (or `GBp`) means prices in pence: the FX columns are then EUR per 1 GBP (`GOOGLEFINANCE("CURRENCY:GBPEUR")`) and the site divides the prices by 100.
+- A missing entry date does not remove the trade from the totals; it only leaves out its days held and the start date, and a warning is shown.
 - Numbers must be in German format: `1.234,56`, `952,89`, `25,10%`. English formats like `1,234.56` are rejected instead of guessed.
 - Dates must be `24.11.2026` (or ISO `2026-11-24`). An empty exit date means the trade is open.
 - `#N/A`, `#REF!`, `#VALUE!`, empty cells, `-` and "Loading..." are errors, never 0. A trade with an error in a cell it needs is shown with "n/a", excluded from all totals, and listed in a visible notice on the page.
